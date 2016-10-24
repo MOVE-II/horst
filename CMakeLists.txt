@@ -5,5 +5,6 @@ set(CMAKE_CXX_STANDARD 14)
 
 
 add_executable(horst
-    src/horst.cpp
+	src/horst.cpp
+	src/error.cpp
 )
