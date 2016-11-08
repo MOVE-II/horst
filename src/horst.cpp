@@ -7,14 +7,17 @@
 #include <string>
 
 #include "error.h"
+#include "log.h"
+#include "satellite.h"
 
 
 namespace horst {
 
-struct arguments {
-	bool verbose = false;
-	int port = 9001;
-};
+
+/**
+ * main program arguments, declared in header as extern.
+ */
+arguments args;
 
 
 void show_help(const char *progname) {
@@ -25,13 +28,14 @@ void show_help(const char *progname) {
 	          << std::endl;
 }
 
+
 arguments parse_args(int argc, char **argv) {
 	int c;
 	int digit_optind = 0;
 
 	arguments args;
 
-	while (1) {
+	while (true) {
 		int option_index = 0;
 		static struct option long_options[] = {
 			{"help",    no_argument,       0, 'h'},
@@ -88,9 +92,14 @@ arguments parse_args(int argc, char **argv) {
 
 int run(int argc, char **argv) {
 	try {
-		arguments args = parse_args(argc, argv);
+		// set the global args
+		args = parse_args(argc, argv);
 
 		std::cout << "Horst launching on port " << args.port << "..." << std::endl;
+
+		Satellite move2{args};
+		move2.loop();
+
 		return 0;
 	}
 	catch (Error &error) {
