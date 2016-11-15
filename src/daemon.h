@@ -16,7 +16,6 @@ public:
 
 private:
 	std::unordered_map<std::string, State> states;
-	State *current_state;
 };
 
 } // horst

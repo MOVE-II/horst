@@ -21,7 +21,7 @@ void Daemon::activate(const std::string &state_name) {
 
 
 bool Daemon::is_active(const State *state) const {
-	return this->current_state == state;
+	// TODO: dbus query for active state
 }
 
 } // horst
