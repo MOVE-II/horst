@@ -1,9 +1,12 @@
 #pragma once
 
+#include <memory>
+#include <uv.h>
+#include <vector>
 
-#include "horst.h"
-
+#include "client.h"
 #include "daemon.h"
+#include "horst.h"
 
 
 namespace horst {
@@ -15,16 +18,32 @@ public:
 
 	/**
 	 * Launch the satellite state processing.
+	 *
+	 * @returns program exit code
 	 */
-	void loop();
+	int run();
 
-protected:
+	/**
+	 * Return the event loop.
+	 */
+	uv_loop_t *get_loop();
+
+	/**
+	 * Add this client to the list.
+	 */
+	void add_client(Client &&client);
 
 private:
 	const arguments &args;
 
+	uv_loop_t loop;
+	uv_tcp_t server;
+
+	std::vector<Client> clients;
+
+	Daemon eps;
 	Daemon com;
-	Daemon payload;
+	Daemon adcs;
 };
 
 }

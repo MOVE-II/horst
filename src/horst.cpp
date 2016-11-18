@@ -98,9 +98,8 @@ int run(int argc, char **argv) {
 		std::cout << "Horst launching on port " << args.port << "..." << std::endl;
 
 		Satellite move2{args};
-		move2.loop();
 
-		return 0;
+		return move2.run();
 	}
 	catch (Error &error) {
 		std::cout << "### Horst internal error ###" << std::endl;
