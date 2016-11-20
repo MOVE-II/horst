@@ -27,7 +27,16 @@ public:
 	uv_stream_t *get_stream();
 	uv_handle_t *get_handle();
 
-	// close the connection
+	/** called when this client receives data */
+	void data_received(const char *data, int size);
+
+	/**
+	 * called when the connection gets lost.
+	 * code == UV_EOF when it's EOF.
+	 */
+	void connection_lost(int code);
+
+	/** close the connection */
 	void close();
 
 private:

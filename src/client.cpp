@@ -66,8 +66,7 @@ void Client::register_callbacks() {
 	// and the second lambda to deallocate it and
 	// call the callback.
 
-	std::cout << "register client callbacks" << std::endl;
-
+	// register callbacks for data receiving
 	uv_read_start(
 		this->get_stream(),
 
@@ -78,14 +77,12 @@ void Client::register_callbacks() {
 
 			// allocate the memory directly!
 			// deallocation happens in the lambda below.
-			std::cout << "alloc(" << suggested_size << ")" << std::endl;
 			char *mem = new char[suggested_size];
 			*buf = uv_buf_init(mem, suggested_size);
-			printf("%p\n", mem);
 		},
 
 		// called when data was read:
-		[] (uv_stream_t */*stream*/,
+		[] (uv_stream_t *stream,
 		    ssize_t nread,
 		    const uv_buf_t *buf) {
 
@@ -96,21 +93,40 @@ void Client::register_callbacks() {
 			//    and its exceptions
 			std::unique_ptr<char[]> holder(buf->base);
 
-			std::cout << "n=" << nread << std::endl;
-			write(0, buf->base, nread);
-			std::cout << "==" << std::endl;
+			Client *this_ = (Client *)stream->data;
+			char *data = nullptr;
 
 			if (nread < 0) {
-				// TODO: callback with nullptr
-				std::cout << "connection lost" << std::endl;
+				// no longer use the callback
+				uv_read_stop(stream);
+
+				// handle the connection loss
+				this_->connection_lost(nread);
+				return;
+			}
+			else if (nread > 0) {
+				data = buf->base;
 			}
 
-			//Client *this_ = (Client *)stream->data;
-			// TODO: call this_->callback(buf->base, nread)
-
-			printf("free %p\n", buf->base);
+			// provide the data
+			this_->data_received(data, nread);
 		}
 	);
+}
+
+
+void Client::data_received(const char *data, int size) {
+	if (size > 0) {
+		write(0, data, size);
+	}
+}
+
+void Client::connection_lost(int code) {
+	if (code == UV_EOF) {
+		std::cout << "connection closed" << std::endl;
+	} else {
+		std::cout << "connection lost: " << code << std::endl;
+	}
 }
 
 

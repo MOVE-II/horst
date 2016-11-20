@@ -53,6 +53,7 @@ int Satellite::run() {
 	// make `this` reachable in callbacks.
 	this->server.data = this;
 
+	// start to listen on the tcp socket
 	ret = uv_listen(
 		(uv_stream_t *)&this->server,
 		1,  // < kernel connection queue size

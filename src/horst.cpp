@@ -10,7 +10,12 @@
 #include "log.h"
 #include "satellite.h"
 
-
+/**
+ * Contains all components of horst, the move-II state controller.
+ *
+ * (c) 2016 Jonas Jelten <jelten@in.tum.de>
+ * released under GNU GPLv3 or later.
+ */
 namespace horst {
 
 
