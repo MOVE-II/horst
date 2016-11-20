@@ -14,7 +14,11 @@ namespace horst {
 class Satellite {
 public:
 	Satellite(const arguments &args);
-	virtual ~Satellite() = default;
+	Satellite(Satellite &&) = delete;
+	Satellite(const Satellite &) = delete;
+	Satellite& operator =(Satellite &&) = delete;
+	Satellite& operator =(const Satellite &) = delete;
+	virtual ~Satellite();
 
 	/**
 	 * Launch the satellite state processing.

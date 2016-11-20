@@ -16,11 +16,14 @@ namespace horst {
 
 Satellite::Satellite(const arguments &args)
 	:
-	args{args},
-	loop{uv_default_loop()} {
+	args{args} {
 
 	uv_loop_init(&this->loop);
 	uv_tcp_init(&this->loop, &this->server);
+}
+
+Satellite::~Satellite() {
+	uv_loop_close(&this->loop);
 }
 
 
@@ -67,12 +70,17 @@ int Satellite::run() {
 
 			Satellite *this_ = (Satellite *) server->data;
 
-			Client client{this_, server};
+			Client client{this_};
+
+			std::cout << "client created" << std::endl;
 
 			// accept the connection on the listening socket
-			if (uv_accept(server, client.get_stream()) == 0) {
-				client.register_callbacks();
+			if (client.accept(server)) {
+				std::cout << "accepted client." << std::endl;
 				this_->add_client(std::move(client));
+			}
+			else {
+				std::cout << "failed to accept error" << std::endl;
 			}
 		}
 	);

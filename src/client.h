@@ -10,7 +10,7 @@ class Satellite;
 
 class Client {
 public:
-	Client(Satellite *satellite, uv_stream_t *server);
+	Client(Satellite *satellite);
 
 	Client(Client &&other);
 	Client &operator =(Client &&other);
@@ -21,6 +21,7 @@ public:
 
 	virtual ~Client();
 
+	bool accept(uv_stream_t *server);
 	void register_callbacks();
 
 	uv_stream_t *get_stream();
@@ -34,7 +35,7 @@ private:
 	bool close_stream;
 
 	/** connection stream */
-	uv_tcp_t connection;
+	std::unique_ptr<uv_tcp_t> connection;
 
 	/** server associated to the client */
 	uv_stream_t *server;

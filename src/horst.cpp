@@ -31,8 +31,6 @@ void show_help(const char *progname) {
 
 arguments parse_args(int argc, char **argv) {
 	int c;
-	int digit_optind = 0;
-
 	arguments args;
 
 	while (true) {
