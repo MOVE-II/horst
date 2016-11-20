@@ -19,7 +19,6 @@ Satellite::Satellite(const arguments &args)
 	args{args} {
 
 	uv_loop_init(&this->loop);
-	uv_tcp_init(&this->loop, &this->server);
 }
 
 Satellite::~Satellite() {
@@ -30,7 +29,7 @@ Satellite::~Satellite() {
 int Satellite::run() {
 	log("starting up connections...");
 
-	if (this->listen_tcp(this->args.port)) {
+	if (this->listen_tcp(this->args.port, &this->server)) {
 		log("failed to set up tcp socket.");
 		return 1;
 	}
@@ -43,8 +42,10 @@ int Satellite::run() {
 }
 
 
-int Satellite::listen_tcp(int port) {
+int Satellite::listen_tcp(int port, uv_tcp_t *server) {
 	int ret;
+
+	uv_tcp_init(&this->loop, server);
 
 	// listen on tcp socket.
 	sockaddr_in6 listen_addr;
@@ -56,7 +57,7 @@ int Satellite::listen_tcp(int port) {
 		return 1;
 	}
 
-	ret = uv_tcp_bind(&this->server, (const sockaddr*) &listen_addr, 0);
+	ret = uv_tcp_bind(server, (const sockaddr*) &listen_addr, 0);
 
 	if (ret) {
 		std::cerr << "can't bind to socket: "
@@ -65,12 +66,12 @@ int Satellite::listen_tcp(int port) {
 	}
 
 	// make `this` reachable in callbacks.
-	this->server.data = this;
+	server->data = this;
 
 	// start to listen on the tcp socket
 	ret = uv_listen(
-		(uv_stream_t *)&this->server,
-		1,  // < kernel connection queue size
+		(uv_stream_t *)server,
+		4,  // < kernel connection queue size
 
 		// when a new connection was received:
 		[] (uv_stream_t *server, int status) {

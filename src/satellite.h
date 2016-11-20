@@ -31,7 +31,7 @@ public:
 	 * Set up listening on the given TCP port for
 	 * debugging clients.
 	 */
-	int listen_tcp(int port);
+	int listen_tcp(int port, uv_tcp_t *server);
 
 	/**
 	 * Return the event loop.
