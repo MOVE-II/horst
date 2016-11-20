@@ -1,10 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <queue>
 #include <uv.h>
 #include <vector>
 
 #include "client.h"
+#include "ctlmessage.h"
 #include "daemon.h"
 #include "horst.h"
 
@@ -43,6 +45,11 @@ public:
 	 */
 	void add_client(Client &&client);
 
+	/**
+	 * Enqueue a new control message to be handled.
+	 */
+	void enqueue(ControlMessage &&msg);
+
 private:
 	const arguments &args;
 
@@ -50,6 +57,8 @@ private:
 	uv_tcp_t server;
 
 	std::vector<Client> clients;
+
+	std::queue<ControlMessage> commands;
 
 	Daemon eps;
 	Daemon com;

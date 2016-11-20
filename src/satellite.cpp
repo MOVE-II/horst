@@ -120,5 +120,9 @@ void Satellite::add_client(Client &&client) {
 	this->clients.push_back(std::move(client));
 }
 
+void Satellite::enqueue(ControlMessage &&msg) {
+	this->commands.push(std::move(msg));
+}
+
 
 } // horst

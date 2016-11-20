@@ -9,6 +9,8 @@ namespace horst {
 class Satellite;
 
 class Client {
+	static constexpr size_t max_buf_size = 4096;
+
 public:
 	Client(Satellite *satellite);
 
@@ -28,7 +30,7 @@ public:
 	uv_handle_t *get_handle();
 
 	/** called when this client receives data */
-	void data_received(const char *data, int size);
+	void data_received(const char *data, size_t size);
 
 	/**
 	 * called when the connection gets lost.
@@ -40,6 +42,9 @@ public:
 	void close();
 
 private:
+	/** Satellite the client connected to */
+	Satellite *satellite;
+
 	/** close the stream when destructing */
 	bool close_stream;
 
@@ -48,6 +53,12 @@ private:
 
 	/** server associated to the client */
 	uv_stream_t *server;
+
+	/** buffer for input commands */
+	std::unique_ptr<char[]> buf;
+
+	/** position in the read buffer */
+	size_t buf_used;
 };
 
 } // horst
