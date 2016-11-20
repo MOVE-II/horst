@@ -28,6 +28,12 @@ public:
 	int run();
 
 	/**
+	 * Set up listening on the given TCP port for
+	 * debugging clients.
+	 */
+	int listen_tcp(int port);
+
+	/**
 	 * Return the event loop.
 	 */
 	uv_loop_t *get_loop();

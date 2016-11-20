@@ -30,11 +30,25 @@ Satellite::~Satellite() {
 int Satellite::run() {
 	log("starting up connections...");
 
+	if (this->listen_tcp(this->args.port)) {
+		log("failed to set up tcp socket.");
+		return 1;
+	}
+
+	// dbus setup:
+	// TODO use libuv for waiting for sdbus socket.
+	// https://github.com/systemd/systemd/blob/493fd52f1ada36bfe63301d4bb50f7fd2b38c670/src/libsystemd/sd-bus/sd-bus.c#L2904
+
+	return uv_run(&this->loop, UV_RUN_DEFAULT);
+}
+
+
+int Satellite::listen_tcp(int port) {
 	int ret;
 
 	// listen on tcp socket.
 	sockaddr_in6 listen_addr;
-	ret = uv_ip6_addr("::", this->args.port, &listen_addr);
+	ret = uv_ip6_addr("::", port, &listen_addr);
 
 	if (ret) {
 		std::cerr << "can't create liste addr: "
@@ -92,12 +106,7 @@ int Satellite::run() {
 		return 1;
 	}
 
-
-	// dbus setup:
-	// TODO use libuv for waiting for sdbus socket.
-	// https://github.com/systemd/systemd/blob/493fd52f1ada36bfe63301d4bb50f7fd2b38c670/src/libsystemd/sd-bus/sd-bus.c#L2904
-
-	return uv_run(&this->loop, UV_RUN_DEFAULT);
+	return 0;
 }
 
 
