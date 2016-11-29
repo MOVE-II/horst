@@ -36,6 +36,11 @@ public:
 	int listen_tcp(int port, uv_tcp_t *server);
 
 	/**
+	 * Register the listening on dbus.
+	 */
+	int listen_dbus();
+
+	/**
 	 * Return the event loop.
 	 */
 	uv_loop_t *get_loop();

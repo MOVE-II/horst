@@ -147,7 +147,7 @@ void Client::data_received(const char *data, size_t size) {
 	//   buf.extend(data)
 	//   npos = buf.rfind(b'\n')
 	//   for line in buf[:npos].split(b'\n'):
-	//     # thing with line
+	//       # thing with line
 	//   del buf[:npos]
 	size_t ncpy = std::min(size, (this->max_buf_size - this->buf_used - 1));
 

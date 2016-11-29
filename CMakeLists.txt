@@ -29,4 +29,5 @@ add_executable(horst
 
 target_link_libraries(horst
 	uv
+	systemd
 )
