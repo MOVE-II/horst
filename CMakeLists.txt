@@ -21,6 +21,8 @@ add_executable(horst
 	src/error.cpp
 	src/horst.cpp
 	src/log.cpp
+	src/procedure.cpp
+	src/procedure_step.cpp
 	src/satellite.cpp
 	src/state.cpp
 	src/task.cpp
