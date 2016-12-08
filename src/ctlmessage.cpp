@@ -11,7 +11,7 @@ ControlMessage::ControlMessage(const std::string &msg) {
 	std::size_t first_space = msg.find(" ");
 
 	if (first_space == -1) {
-		this->is_valid = false;
+		this->valid = false;
 		return;
 	}
 
@@ -23,60 +23,60 @@ ControlMessage::ControlMessage(const std::string &msg) {
 	}
 
 	if (rest.size() == 0) {
-		this->is_valid = false;
+		this->valid = false;
 		return;
 	}
 
-	if (command_type_str.compare("RUN") == 0) {
+	if (command_type_str == "RUN") {
 		this->procedure_name = rest;
 		this->type            = ctl_msg_t::RUN;
 	}
-	else if (command_type_str.compare("EXEC") == 0) {
+	else if (command_type_str == "EXEC") {
 		this->shell_command  = rest;
 		this->type           = ctl_msg_t::EXEC;
 	}
-	else if (command_type_str.compare("STATE") == 0) {
+	else if (command_type_str == "STATE") {
 		this->subsystem_id  = rest;
 		this->type          = ctl_msg_t::STATE;
 	}
-	else if (command_type_str.compare("START") == 0) {
+	else if (command_type_str == "START") {
 		this->subsystem_id  = rest;
 		this->type          = ctl_msg_t::START;
 	}
-	else if (command_type_str.compare("STOP") == 0) {
+	else if (command_type_str == "STOP") {
 		this->subsystem_id  = rest;
 		this->type          = ctl_msg_t::STOP;
 	}
-	else if (command_type_str.compare("RESTART") == 0) {
+	else if (command_type_str == "RESTART") {
 		this->subsystem_id  = rest;
 		this->type          = ctl_msg_t::RESTART;
 	}
-	else if (command_type_str.compare("STATUS") == 0) {
+	else if (command_type_str == "STATUS") {
 		this->subsystem_id  = rest;
 		this->type          = ctl_msg_t::STATUS;
 	}
 	else {
-		this->is_valid = false;
+		this->valid = false;
 		return;
 	}
 
-	this->is_valid = true;
+	this->valid = true;
 }
 
-const std::string &ControlMessage::get_procedure_name() {
+const std::string &ControlMessage::get_procedure_name() const {
 	return this->procedure_name;
 }
 
-const std::string &ControlMessage::get_subsystem_id() {
+const std::string &ControlMessage::get_subsystem_id() const {
 	return this->subsystem_id;
 }
 
-const std::string &ControlMessage::get_shell_command() {
+const std::string &ControlMessage::get_shell_command() const {
 	return this->shell_command;
 }
 
 bool ControlMessage::is_valid() {
-	return this->is_valid;
+	return this->valid;
 }
 
 ctl_msg_t ControlMessage::get_type() {

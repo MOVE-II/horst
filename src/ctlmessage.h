@@ -38,7 +38,7 @@ private:
 	std::string subsystem_id;
 	std::string shell_command;
 	ctl_msg_t type;
-	bool is_valid;
+	bool valid;
 };
 
 } // horst
