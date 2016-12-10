@@ -6,7 +6,7 @@
 #include <sstream>
 #include <unistd.h>
 
-#include "ctlmessage.h"
+#include "event/ctlmessage.h"
 #include "satellite.h"
 
 
@@ -182,10 +182,15 @@ void Client::data_received(const char *data, size_t size) {
 	this->buf_used -= npos + 1;
 
 	for (auto &entry : seglist) {
-		std::cout << "got CMD: " << entry << std::endl;
-		ControlMessage cmd{entry};
+		auto cmd = ControlMessage::parse(entry);
 
-		this->satellite->enqueue(std::move(cmd));
+		if (cmd.get() != nullptr) {
+			// handle each command in the event handler
+			this->satellite->on_event(std::move(cmd));
+		}
+		else {
+			// ignore the command.
+		}
 	}
 }
 
@@ -201,7 +206,8 @@ void Client::connection_lost(int code) {
 	uv_read_stop(this->get_stream());
 
 	this->close();
-	// TODO: remove from parent container if necessary
+
+	// TODO: remove from parent container
 }
 
 

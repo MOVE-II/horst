@@ -4,7 +4,7 @@ namespace horst {
 
 class Procedure {
 public:
-	Procedure() = default;
+	Procedure();
 
 	virtual ~Procedure() = default;
 };

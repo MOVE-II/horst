@@ -2,5 +2,6 @@
 
 namespace horst {
 
+Procedure::Procedure() {}
 
 } // horst

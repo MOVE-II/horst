@@ -107,6 +107,7 @@ int run(int argc, char **argv) {
 	catch (Error &error) {
 		std::cout << "### Horst internal error ###" << std::endl;
 		std::cout << error.what() << std::endl;
+		std::cout << error << std::endl;
 		return 1;
 	}
 	catch (std::exception &error) {

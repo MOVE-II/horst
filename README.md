@@ -32,6 +32,58 @@ Have a C++14 compiler and CMake.
 `mkdir build && cd build && cmake .. && make -j4`
 
 
+Algorithm
+---------
+
+HORST works the following way:
+
+``` python
+
+current_state = State()
+
+
+while (True):
+    # sleep until some change arrives
+    event = event_loop_wait(s3tp, dbus, ...)
+
+    # update the current state with a fact
+    if event.is_fact():
+        event.update(current_state)
+
+    # or update the target state with a request
+    target_state = current_state.copy()
+    if not event.is_fact():
+        event.update(target_state)
+
+    # determine actions to perform when
+    # we change from current to target state
+    actions = current_state.transform_to(target_state)
+
+    # enqueue those actions in the event loop
+    event_loop_enqueue(actions)
+```
+
+The `current_state.transform_to` method does the actual work.
+It determines what is necessary to come from `current_state`
+to `target_state` by sending out requests. When requests are sent,
+the `current_state` is updated to store the "request in progress".
+
+The transformation is done with a table.
+This table enforces constraints on the state.
+
+If some new state is requested, the `target_state` is just set to the
+desired outcome, but the transformation via this table is done afterwards.
+This means for example if the power is not ok, no matter the request,
+the transmitter will stay off.
+
+
+| Temp ok | Power ok | transmit | mode | -> transmit | -> mode  |
+|---------|----------|----------|------|-------------|----------|
+| X       | 0        | _        | _    |           0 | fallback |
+| 0       | X        | _        | _    |           0 | fallback |
+| X       | X        | 1        | _    |           _ | speed    |
+
+
 License
 -------
 

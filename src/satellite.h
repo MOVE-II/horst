@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "client.h"
-#include "ctlmessage.h"
-#include "daemon.h"
+#include "event/event.h"
 #include "horst.h"
+#include "state/state.h"
 
 
 namespace horst {
@@ -51,23 +51,27 @@ public:
 	void add_client(Client &&client);
 
 	/**
-	 * Enqueue a new control message to be handled.
+	 * Called from all the callbacks that receive some external event.
 	 */
-	void enqueue(ControlMessage &&msg);
+	void on_event(std::unique_ptr<Event> &&event);
 
 private:
+	/** program launch arguments */
 	const arguments &args;
 
+	/** the event loop used */
 	uv_loop_t loop;
+
+	/** tcp server for control clients */
 	uv_tcp_t server;
 
+	/** list of control clients connected */
 	std::vector<Client> clients;
 
-	std::queue<ControlMessage> commands;
-
-	Daemon eps;
-	Daemon com;
-	Daemon adcs;
+	/**
+	 * current state of the satellite.
+	 */
+	State current_state;
 };
 
-}
+} // horst

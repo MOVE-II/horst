@@ -9,6 +9,7 @@
 #include <systemd/sd-bus.h>
 #include <unistd.h>
 
+#include "action/action.h"
 #include "log.h"
 #include "util.h"
 
@@ -40,6 +41,7 @@ int Satellite::run() {
 		return 1;
 	}
 
+	// let the event loop run forever.
 	return uv_run(&this->loop, UV_RUN_DEFAULT);
 }
 
@@ -112,11 +114,18 @@ int Satellite::listen_tcp(int port, uv_tcp_t *server) {
 	return 0;
 }
 
-static const sd_bus_vtable horst_vtable[] = {
-	SD_BUS_VTABLE_START(0),
-	SD_BUS_METHOD("start", "xx", "x", nullptr, SD_BUS_VTABLE_UNPRIVILEGED),
-	SD_BUS_VTABLE_END
-};
+
+extern "C" {
+	const sd_bus_vtable *get_vtable() {
+		static const sd_bus_vtable horst_vtable[] = {
+			SD_BUS_VTABLE_START(0),
+			SD_BUS_METHOD("start", "xx", "x", nullptr, SD_BUS_VTABLE_UNPRIVILEGED),
+			SD_BUS_VTABLE_END
+		};
+
+		return horst_vtable;
+	}
+}
 
 
 int Satellite::listen_dbus() {
@@ -141,7 +150,7 @@ int Satellite::listen_dbus() {
 		&slot,
 		"/warr/moveII/horst",  // object path
 		"warr.moveII.horst",   // interface name
-		horst_vtable,
+		get_vtable(),
 		nullptr
 	);
 
@@ -177,8 +186,33 @@ void Satellite::add_client(Client &&client) {
 	this->clients.push_back(std::move(client));
 }
 
-void Satellite::enqueue(ControlMessage &&msg) {
-	this->commands.push(std::move(msg));
+
+void Satellite::on_event(std::unique_ptr<Event> &&event) {
+	// called for each event the satellite receives
+	// it may come from earth or any other subsystem
+
+	// if the event is a fact, update the current state
+	if (event->is_fact()) {
+		event->update(this->current_state);
+	}
+
+	// create the target state as a copy of the current state
+	State target_state = this->current_state.copy();
+
+	// it the event is a request (i.e. not a fact),
+	// update it in the target state
+	if (not event->is_fact()) {
+		event->update(target_state);
+	}
+
+	// determine the actions needed to reach the target state
+	auto actions = this->current_state.transform_to(target_state);
+
+	// TODO: enqueue those actions
+	for (auto &action : actions) {
+		std::cout << "performing: " << action->describe() << std::endl;
+		action->perform(this);
+	}
 }
 
 
