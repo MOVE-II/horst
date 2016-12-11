@@ -28,6 +28,7 @@ add_executable(horst
 	src/log.cpp
 	src/procedure/procedure.cpp
 	src/procedure/procedure_step.cpp
+	src/process.cpp
 	src/satellite.cpp
 	src/state/computer.cpp
 	src/state/state.cpp

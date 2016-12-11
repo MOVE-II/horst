@@ -1,7 +1,11 @@
 #include "shell_command.h"
 
 #include <iostream>
+#include <memory>
 #include <sstream>
+
+#include "../process.h"
+#include "../satellite.h"
 
 
 namespace horst {
@@ -18,8 +22,10 @@ std::string ShellCommand::describe() const {
 }
 
 
-void ShellCommand::perform(Satellite *) {
-	std::cout << "TODO execv(" << this->cmd << ");" << std::endl;
+void ShellCommand::perform(Satellite *sat) {
+	auto process = std::make_unique<Process>(sat->get_loop(), this->cmd);
+
+	sat->add_process(std::move(process));
 }
 
 } // horst

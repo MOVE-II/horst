@@ -9,6 +9,7 @@
 #include "client/client.h"
 #include "event/event.h"
 #include "horst.h"
+#include "process.h"
 #include "state/state.h"
 
 
@@ -52,6 +53,11 @@ public:
 	void add_client(std::unique_ptr<Client> &&client);
 
 	/**
+	 * Add this process to the list.
+	 */
+	void add_process(std::unique_ptr<Process> &&proc);
+
+	/**
 	 * Called from all the callbacks that receive some external event.
 	 */
 	void on_event(std::unique_ptr<Event> &&event);
@@ -68,6 +74,9 @@ private:
 
 	/** list of control clients connected */
 	std::vector<std::unique_ptr<Client>> clients;
+
+	/** list of processes executed */
+	std::vector<std::unique_ptr<Process>> processes;
 
 	/**
 	 * dbus bus handle

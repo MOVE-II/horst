@@ -232,6 +232,11 @@ void Satellite::add_client(std::unique_ptr<Client> &&client) {
 }
 
 
+void Satellite::add_process(std::unique_ptr<Process> &&process) {
+	this->processes.push_back(std::move(process));
+}
+
+
 void Satellite::on_event(std::unique_ptr<Event> &&event) {
 	// called for each event the satellite receives
 	// it may come from earth or any other subsystem
