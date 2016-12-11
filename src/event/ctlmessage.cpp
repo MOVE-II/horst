@@ -37,37 +37,37 @@ ControlMessage::parse(const std::string &msg) {
 		return ret;
 	}
 
-	if (command_type == "RUN") {
+	if (command_type == "run") {
 		ret = std::make_unique<ProcedureCallReq>(rest);
 	}
-	else if (command_type == "EXEC") {
+	else if (command_type == "exec") {
 		ret = std::make_unique<ShellCommandReq>(rest);
 	}
-	else if (command_type == "STATUS") {
+	else if (command_type == "status") {
 		ret = std::make_unique<DaemonControlReq>(
 			daemon_ctl_action_t::STATUS,
 			rest
 		);
 	}
-	else if (command_type == "START") {
+	else if (command_type == "start") {
 		ret = std::make_unique<DaemonControlReq>(
 			daemon_ctl_action_t::START,
 			rest
 		);
 	}
-	else if (command_type == "STOP") {
+	else if (command_type == "stop") {
 		ret = std::make_unique<DaemonControlReq>(
 			daemon_ctl_action_t::STOP,
 			rest
 		);
 	}
-	else if (command_type == "RESTART") {
+	else if (command_type == "restart") {
 		ret = std::make_unique<DaemonControlReq>(
 			daemon_ctl_action_t::RESTART,
 			rest
 		);
 	}
-	// TODO: more commands like REPORT => StatusReport of the satellite
+	// TODO: more commands like "report" => StatusReport of the satellite
 	else {
 		std::cout << "[event] unhandled command: " << command_type << std::endl;
 	}
