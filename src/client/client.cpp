@@ -72,6 +72,7 @@ void Client::data_received(const char *data, size_t size) {
 		if (cmd.get() != nullptr) {
 			// handle each command in the event handler
 			this->satellite->on_event(std::move(cmd));
+			this->send("ack\n");
 		}
 		else {
 			// ignore the command.
@@ -79,5 +80,8 @@ void Client::data_received(const char *data, size_t size) {
 	}
 }
 
+void Client::send(const char *text) {
+	this->send(text, strlen(text));
+}
 
 } // horst

@@ -156,7 +156,8 @@ int Satellite::listen_dbus() {
 	// open bus: system or user
 	r = sd_bus_open_user(&this->bus);
 	if (r < 0) {
-		fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-r));
+		std::cout << "failed to connect to bus: "
+		          << strerror(-r) << std::endl;
 		goto finish;
 	}
 

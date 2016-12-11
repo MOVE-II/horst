@@ -22,8 +22,13 @@ public:
 	 */
 	bool accept(uv_stream_t *server);
 
-	/** register callbacks to the event loop */
-	void register_callbacks();
+	/** register receiving callbacks to the event loop */
+	void start_receiving();
+
+	/**
+	 * Send data to the client.
+	 */
+	void send(const char *buf, size_t len) override;
 
 	/**
 	 * called when the connection gets lost.

@@ -26,6 +26,15 @@ public:
 	/** called when this client receives data */
 	void data_received(const char *data, size_t size);
 
+	/** call this to send data to the client */
+	virtual void send(const char *buf, size_t len) = 0;
+
+	/**
+	 * call this to send c-strings.
+	 * internally calls this->send(text, strlen(text))
+	 */
+	void send(const char *text);
+
 	/** close the connection */
 	virtual void close() = 0;
 

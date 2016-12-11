@@ -28,7 +28,7 @@ bool TCPClient::accept(uv_stream_t *server) {
 	bool success = uv_accept(server, this->get_stream()) == 0;
 
 	if (success) {
-		this->register_callbacks();
+		this->start_receiving();
 		this->server = server;
 	}
 
@@ -36,7 +36,7 @@ bool TCPClient::accept(uv_stream_t *server) {
 }
 
 
-void TCPClient::register_callbacks() {
+void TCPClient::start_receiving() {
 	// use the first lambda to allocate memory
 	// and the second lambda to deallocate it and
 	// call the callback.
@@ -66,7 +66,7 @@ void TCPClient::register_callbacks() {
 			// this gets deallocated when it goes out of scope here
 			// => memory is kept valid for the callback
 			//    and its exceptions
-			std::unique_ptr<char[]> holder(buf->base);
+			std::unique_ptr<char[]> holder{buf->base};
 
 			TCPClient *this_ = (TCPClient *)stream->data;
 			char *data = nullptr;
@@ -82,6 +82,41 @@ void TCPClient::register_callbacks() {
 
 			// provide the data
 			this_->data_received(data, nread);
+		}
+	);
+}
+
+
+void TCPClient::send(const char *buf, size_t len) {
+
+	// the request has to live until the callback was done.
+	uv_write_t *req = new uv_write_t;
+
+	// we may store `this` in the request to access it in the lambda.
+	// req->data = this;
+
+	// create a copy of the data to be send.
+	char *buf_cpy = new char[len];
+	memcpy(buf_cpy, buf, len);
+
+	// libuv copies the uvbuf internally in uv_write,
+	// so no need to keep it alive
+	uv_buf_t uvbuf{buf_cpy, len};
+
+	uv_write(
+		req, this->get_stream(), &uvbuf, 1,
+		[] (uv_write_t *req, int status) {
+			if (status != 0) {
+				std::cout << "failed to send: "
+				          << uv_strerror(status) << std::endl;
+			}
+
+			// this is probably a very dirty hack.
+			// but we need to free the damn buffer we created above.
+			delete[] req->bufsml[0].base;
+
+			// delete the request we also created above.
+			delete req;
 		}
 	);
 }
