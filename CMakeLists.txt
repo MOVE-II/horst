@@ -18,7 +18,8 @@ set(CMAKE_BUILD_TYPE DEBUG)
 add_executable(horst
 	src/action/action.cpp
 	src/action/shell_command.cpp
-	src/client.cpp
+	src/client/client.cpp
+	src/client/tcp_client.cpp
 	src/daemon.cpp
 	src/error.cpp
 	src/event/ctlmessage.cpp

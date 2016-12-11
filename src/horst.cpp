@@ -98,7 +98,7 @@ int run(int argc, char **argv) {
 		// set the global args
 		args = parse_args(argc, argv);
 
-		std::cout << "Horst launching on port " << args.port << "..." << std::endl;
+		std::cout << "[horst] launching..." << std::endl;
 
 		Satellite move2{args};
 

@@ -2,10 +2,11 @@
 
 #include <memory>
 #include <queue>
+#include <systemd/sd-bus.h>
 #include <uv.h>
 #include <vector>
 
-#include "client.h"
+#include "client/client.h"
 #include "event/event.h"
 #include "horst.h"
 #include "state/state.h"
@@ -48,7 +49,7 @@ public:
 	/**
 	 * Add this client to the list.
 	 */
-	void add_client(Client &&client);
+	void add_client(std::unique_ptr<Client> &&client);
 
 	/**
 	 * Called from all the callbacks that receive some external event.
@@ -66,7 +67,12 @@ private:
 	uv_tcp_t server;
 
 	/** list of control clients connected */
-	std::vector<Client> clients;
+	std::vector<std::unique_ptr<Client>> clients;
+
+	/**
+	 * dbus bus handle
+	 */
+	sd_bus *bus;
 
 	/**
 	 * current state of the satellite.

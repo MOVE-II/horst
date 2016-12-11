@@ -19,7 +19,7 @@ std::string ShellCommand::describe() const {
 
 
 void ShellCommand::perform(Satellite *) {
-	std::cout << "TODO execute: " << this->cmd << std::endl;
+	std::cout << "TODO execv(" << this->cmd << ");" << std::endl;
 }
 
 } // horst

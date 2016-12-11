@@ -6,10 +6,10 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <systemd/sd-bus.h>
 #include <unistd.h>
 
 #include "action/action.h"
+#include "client/tcp_client.h"
 #include "log.h"
 #include "util.h"
 
@@ -18,26 +18,30 @@ namespace horst {
 
 Satellite::Satellite(const arguments &args)
 	:
-	args{args} {
+	args{args},
+	bus{nullptr} {
 
 	uv_loop_init(&this->loop);
 }
 
 Satellite::~Satellite() {
+	std::cout << "[satellite] destroying..." << std::endl;
+
 	uv_loop_close(&this->loop);
+	sd_bus_close(this->bus);
 }
 
 
 int Satellite::run() {
-	log("starting up connections...");
+	log("[satellite] starting up connections...");
 
 	if (this->listen_tcp(this->args.port, &this->server)) {
-		log("failed to set up tcp socket.");
+		log("[satellite] failed to set up tcp socket.");
 		return 1;
 	}
 
 	if (this->listen_dbus()) {
-		log("failed to listen on dbus.");
+		log("[satellite] failed to listen on dbus.");
 		return 1;
 	}
 
@@ -51,12 +55,15 @@ int Satellite::listen_tcp(int port, uv_tcp_t *server) {
 
 	uv_tcp_init(&this->loop, server);
 
+	std::cout << "[satellite] listening on port "
+	          << port << "..." << std::endl;
+
 	// listen on tcp socket.
 	sockaddr_in6 listen_addr;
 	ret = uv_ip6_addr("::", port, &listen_addr);
 
 	if (ret) {
-		std::cerr << "can't create liste addr: "
+		std::cout << "[satellite] can't create liste addr: "
 		          << uv_strerror(ret) << std::endl;
 		return 1;
 	}
@@ -64,7 +71,7 @@ int Satellite::listen_tcp(int port, uv_tcp_t *server) {
 	ret = uv_tcp_bind(server, (const sockaddr*) &listen_addr, 0);
 
 	if (ret) {
-		std::cerr << "can't bind to socket: "
+		std::cout << "[satellite] can't bind to socket: "
 		          << uv_strerror(ret) << std::endl;
 		return 1;
 	}
@@ -81,32 +88,29 @@ int Satellite::listen_tcp(int port, uv_tcp_t *server) {
 		[] (uv_stream_t *server, int status) {
 
 			if (status < 0) {
-				std::cerr << "New connection error: "
+				std::cout << "[satellite] new connection error: "
 				          << uv_strerror(status) << std::endl;
 				return;
 			}
 
-			std::cout << "new connection received" << std::endl;
+			std::cout << "[satellite] new connection received" << std::endl;
 
 			Satellite *this_ = (Satellite *) server->data;
-
-			Client client{this_};
-
-			std::cout << "client created" << std::endl;
+			auto client = std::make_unique<TCPClient>(this_);
 
 			// accept the connection on the listening socket
-			if (client.accept(server)) {
-				std::cout << "accepted client." << std::endl;
+			if (client->accept(server)) {
 				this_->add_client(std::move(client));
 			}
 			else {
-				std::cout << "failed to accept error" << std::endl;
+				std::cout << "[satellite] failed to accept tcp client"
+				<< std::endl;
 			}
 		}
 	);
 
 	if (ret) {
-		std::cerr << "Listen error: "
+		std::cout << "[satellite] listen error: "
 		          << uv_strerror(ret) << std::endl;
 		return 1;
 	}
@@ -115,17 +119,30 @@ int Satellite::listen_tcp(int port, uv_tcp_t *server) {
 }
 
 
-extern "C" {
-	const sd_bus_vtable *get_vtable() {
-		static const sd_bus_vtable horst_vtable[] = {
-			SD_BUS_VTABLE_START(0),
-			SD_BUS_METHOD("start", "xx", "x", nullptr, SD_BUS_VTABLE_UNPRIVILEGED),
-			SD_BUS_VTABLE_END
-		};
+/* stupid dbus test function to provide multiplication */
+int method_multiply(sd_bus_message *m,
+                           void * /*userdata*/,
+                           sd_bus_error */*ret_error*/) {
+	int64_t x, y;
+	int r;
 
-		return horst_vtable;
+	// xx = two 64 bit numbers
+	r = sd_bus_message_read(m, "xx", &x, &y);
+	if (r < 0) {
+		std::cout << "Failed to parse parameters: "
+		          << strerror(-r) << std::endl;
+		return r;
 	}
+
+	return sd_bus_reply_method_return(m, "x", x * y);
 }
+
+
+static const sd_bus_vtable horst_vtable[] = {
+	SD_BUS_VTABLE_START(0),
+	SD_BUS_METHOD("multiply", "xx", "x", method_multiply, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_VTABLE_END
+};
 
 
 int Satellite::listen_dbus() {
@@ -134,11 +151,10 @@ int Satellite::listen_dbus() {
 	// https://github.com/systemd/systemd/blob/493fd52f1ada36bfe63301d4bb50f7fd2b38c670/src/libsystemd/sd-bus/sd-bus.c#L2904
 
 	sd_bus_slot *slot = nullptr;
-	sd_bus *bus = nullptr;
 	int r;
 
-	// open system bus
-	r = sd_bus_open_system(&bus);
+	// open bus: system or user
+	r = sd_bus_open_user(&this->bus);
 	if (r < 0) {
 		fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-r));
 		goto finish;
@@ -146,34 +162,62 @@ int Satellite::listen_dbus() {
 
 	// install the object
 	r = sd_bus_add_object_vtable(
-		bus,
+		this->bus,
 		&slot,
 		"/warr/moveII/horst",  // object path
 		"warr.moveII.horst",   // interface name
-		get_vtable(),
+		horst_vtable,
 		nullptr
 	);
 
 	if (r < 0) {
-		std::cerr << "Failed to issue method call: " << strerror(-r) << std::endl;
+		std::cout << "[dbus] failed to issue method call: "
+		          << strerror(-r) << std::endl;
 		goto finish;
 	}
 
 	/* Take a well-known service name so that clients can find us */
-	r = sd_bus_request_name(bus, "warr.moveII.horst", 0);
+	r = sd_bus_request_name(this->bus, "warr.moveII.horst", 0);
 	if (r < 0) {
-		std::cerr << "Failed to acquire service name: " << strerror(-r) << std::endl;
+		std::cout << "[dbus] failed to acquire service name: "
+		          << strerror(-r) << std::endl;
 		goto finish;
 	}
 
 	// TODO: register the filedescriptor from
 	//       sd_bus_get_fd(bus) to libuv
 
-finish:
-	sd_bus_slot_unref(slot);
-	sd_bus_unref(bus);
+
+	/*
+	// TODO: use the libuv loop instead of this one.
+	while (true) {
+		r = sd_bus_process(bus, nullptr);
+		if (r < 0) {
+			std::cout << "[dbus] failed to process bus: "
+			          << strerror(-r) << std::endl;
+			goto finish;
+		}
+		if (r > 0)
+			continue;
+
+		r = sd_bus_wait(bus, (uint64_t) -1);
+		if (r < 0) {
+			std::cout << "[dbus] failed to wait on bus: "
+			          << strerror(-r) << std::endl;
+			goto finish;
+		}
+	}
+	*/
 
 	return 0;
+
+finish:
+	sd_bus_slot_unref(slot);
+	sd_bus_unref(this->bus);
+
+	this->bus = nullptr;
+
+	return 1;
 }
 
 
@@ -182,7 +226,7 @@ uv_loop_t *Satellite::get_loop() {
 }
 
 
-void Satellite::add_client(Client &&client) {
+void Satellite::add_client(std::unique_ptr<Client> &&client) {
 	this->clients.push_back(std::move(client));
 }
 

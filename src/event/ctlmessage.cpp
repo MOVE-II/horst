@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <sstream>
 
 #include "../state/state.h"
 
@@ -16,11 +17,11 @@ ControlMessage::parse(const std::string &msg) {
 
 	std::unique_ptr<ControlMessage> ret = nullptr;
 
-	std::cout << "parsing control message: " << msg << std::endl;
+	std::cout << "[event] parsing control message: " << msg << std::endl;
 	std::size_t first_space = msg.find(" ");
 
 	if (first_space == std::string::npos) {
-		std::cout << "no parameters given to command" << std::endl;
+		std::cout << "[event] no parameters given to command" << std::endl;
 		return ret;
 	}
 
@@ -32,7 +33,7 @@ ControlMessage::parse(const std::string &msg) {
 	}
 
 	if (rest.size() == 0) {
-		std::cout << "parameters have a length of 0" << std::endl;
+		std::cout << "[event] parameters have a length of 0" << std::endl;
 		return ret;
 	}
 
@@ -68,7 +69,7 @@ ControlMessage::parse(const std::string &msg) {
 	}
 	// TODO: more commands like REPORT => StatusReport of the satellite
 	else {
-		std::cout << "unhandled command: " << command_type << std::endl;
+		std::cout << "[event] unhandled command: " << command_type << std::endl;
 	}
 
 	return ret;
@@ -87,7 +88,7 @@ ProcedureCallReq::ProcedureCallReq(const std::string &name)
 	name{name} {}
 
 
-void ProcedureCallReq::update(State &state) {
+void ProcedureCallReq::update(State &/*state*/) {
 	// TODO: enqueue procedure
 }
 
@@ -110,9 +111,27 @@ DaemonControlReq::DaemonControlReq(daemon_ctl_action_t action,
 
 
 void DaemonControlReq::update(State &state) {
-	// TODO: generate and enqueue shell command
-	std::string command = "echo lol";
-	state.computer.shell_commands.push_back(command);
+	std::stringstream command;
+	command << "sudo systemctl";
+
+	switch (this->action) {
+	case daemon_ctl_action_t::START:
+		command << "start";
+		break;
+	case daemon_ctl_action_t::STOP:
+		command << "stop";
+		break;
+	case daemon_ctl_action_t::RESTART:
+		command << "restart";
+		break;
+	case daemon_ctl_action_t::STATUS:
+		command << "status";
+		break;
+	}
+
+	command << this->service_name;
+
+	state.computer.shell_commands.push_back(command.str());
 }
 
 }  // horst

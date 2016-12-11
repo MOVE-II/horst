@@ -20,7 +20,7 @@ public:
 	/**
 	 * A textual description of what the action is doing.
 	 */
-	virtual std::string describe() const;
+	virtual std::string describe() const = 0;
 
 	/**
 	 * Perform the action.
@@ -28,7 +28,7 @@ public:
 	 * or whatever is needed to do.
 	 * Override it for each action type.
 	 */
-	virtual void perform(Satellite *satellite);
+	virtual void perform(Satellite *satellite) = 0;
 };
 
 } // horst
