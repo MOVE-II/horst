@@ -54,9 +54,25 @@ public:
 	int listen_s3tp(int port);
 
 	/**
+	 * Callback for events on the dbus file descriptor.
+	 * Can't be a lambda because it needs to reference to itself.
+	 */
+	static void on_dbus_ready(uv_poll_t *handle, int status, int events);
+
+	/**
 	 * Return the event loop.
 	 */
 	uv_loop_t *get_loop();
+
+	/**
+	 * Return the bus handle.
+	 */
+	sd_bus *get_bus();
+
+	/**
+	 * Return the bus slot.
+	 */
+	sd_bus_slot **get_bus_slot();
 
 	/**
 	 * Add this client to the list.
@@ -108,6 +124,9 @@ private:
 	/** tcp server for control clients */
 	uv_tcp_t server;
 
+	/** polling object for dbus events */
+	uv_poll_t dbus_connection;
+
 	/** s3tp unix socket watcher */
 	uv_loop_t s3tp_connection;
 
@@ -126,6 +145,11 @@ private:
 	 * dbus bus handle
 	 */
 	sd_bus *bus;
+
+	/**
+	 * dbus slot handle
+	 */
+	sd_bus_slot *bus_slot;
 
 	/**
 	 * Available procedures.

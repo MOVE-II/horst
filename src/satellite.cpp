@@ -13,7 +13,6 @@
 #include "log.h"
 #include "util.h"
 
-
 namespace horst {
 
 Satellite::Satellite(const arguments &args)
@@ -25,16 +24,21 @@ Satellite::Satellite(const arguments &args)
 	uv_loop_init(&this->loop);
 }
 
+
 Satellite::~Satellite() {
 	std::cout << "[satellite] destroying..." << std::endl;
 
-	uv_loop_close(&this->loop);
 	sd_bus_close(this->bus);
+	sd_bus_slot_unref(this->bus_slot);
+	sd_bus_unref(this->bus);
+	uv_poll_stop(&this->dbus_connection);
+	uv_loop_close(&this->loop);
 }
 
 
 int Satellite::run() {
 	log("[satellite] starting up connections...");
+	int ret;
 
 	if (this->listen_tcp(this->args.port)) {
 		log("[satellite] failed to set up tcp socket.");
@@ -52,7 +56,10 @@ int Satellite::run() {
 	}
 
 	// let the event loop run forever.
-	return uv_run(&this->loop, UV_RUN_DEFAULT);
+	log("[satellite] Starting event loop");
+	ret = uv_run(&this->loop, UV_RUN_DEFAULT);
+	log("[satellite] Stopping event loop");
+	return ret;
 }
 
 
@@ -140,62 +147,157 @@ int Satellite::listen_s3tp(int /*port*/) {
 }
 
 
-/* stupid dbus test function to provide multiplication */
-int method_multiply(sd_bus_message *m,
-                           void * /*userdata*/,
-                           sd_bus_error * /*ret_error*/) {
-	int64_t x, y;
+void Satellite::on_dbus_ready(uv_poll_t *handle,
+                              int /*status*/,
+                              int /*events*/) {
 	int r;
+	uint64_t usec;
 
-	// xx = two 64 bit numbers
-	r = sd_bus_message_read(m, "xx", &x, &y);
+	sd_bus *this_bus = ((Satellite *)handle->data)->get_bus();
+
+	log("->Enter dbus events call back ");
+
+	int current_events = sd_bus_get_events(this_bus);
+	sd_bus_get_timeout(this_bus, &usec);
+	uv_poll_start(handle, current_events, &on_dbus_ready);
+
+	// let dbus handle the requests
+	r = sd_bus_process(this_bus, nullptr);
+
 	if (r < 0) {
-		std::cout << "Failed to parse parameters: "
+		std::cout << "Failed to process bus:  "
 		          << strerror(-r) << std::endl;
-		return r;
+		return;
+	}
+	else if (r > 0) {
+		/// we processed a request, try to process another one, right-away
+		log("-----a dbus request has been processed ");
 	}
 
-	return sd_bus_reply_method_return(m, "x", x * y);
+	log("<-Exit dbus events call back ");
+}
+
+static int start(sd_bus_message *m,
+                 void * /*userdata*/,
+                 sd_bus_error * /*ret_error*/) {
+
+	log("***method START in horst service is being called ! ");
+	return sd_bus_reply_method_return(m, "x", 0);
+}
+
+static int stop_callback(sd_bus_message *m,
+                         void * /*userdata*/,
+                         sd_bus_error * /*ret_error*/) {
+
+	int r;
+	const char *path;
+
+	log("***method stop_callback in horst service is being called ! ");
+
+	r = sd_bus_message_read(m, "s", &path);
+	if (r < 0) {
+		std::cout << "Failed to parse response message: "
+		          << strerror(-r) << std::endl;
+		goto exit;
+	}
+
+	printf("Machine ID is %s.\n", path);
+exit:
+	return sd_bus_reply_method_return(m, "x", 0);
 }
 
 
+static int stop(sd_bus_message *m,
+                void *userdata,
+                sd_bus_error * /*ret_error*/) {
+	int r = 0;
+	int input;
+
+	log("***method STOP in horst service is being called ! ");
+
+	/* Read the parameters */
+	r = sd_bus_message_read(m, "x", &input);
+	if (r < 0) {
+		std::cout << "Failed to parse parameters:  " << strerror(-r)
+		          << std::endl;
+		return r;
+	}
+
+	if (input == 0) {
+		/* example from linux  bus */
+		r = sd_bus_call_method_async(
+			((Satellite *)userdata)->get_bus(),
+			((Satellite *)userdata)->get_bus_slot(),
+			"org.gnome.gedit",                    /* service to contact */
+			"/com/canonical/unity/gtk/window/42", /* object path */
+			"org.freedesktop.DBus.Peer",          /* interface name */
+			"GetMachineId",                       /* method name */
+			stop_callback,
+			userdata,
+			""
+		);
+	} else {
+		/* example from move2  bus */
+		r = sd_bus_call_method_async(
+			((Satellite *)userdata)->get_bus(),
+			((Satellite *)userdata)->get_bus_slot(),
+			"warr.moveII.horst",  /* service to contact */
+			"/warr/moveII/horst", /* object path */
+			"warr.moveII.horst",  /* interface name */
+			"stop",               /* method name */
+			stop_callback,
+			userdata,
+			"x",
+			input
+		);
+	}
+
+	if (r < 0) {
+		std::cout << "Failed to issue method call: " << strerror(-r)
+		          << std::endl;
+		return r;
+	}
+
+	return sd_bus_reply_method_return(m, "x", 0);
+}
+
 static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_VTABLE_START(0),
-	SD_BUS_METHOD("multiply", "xx", "x", method_multiply, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("start", "", "x", start, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("stop", "x", "x", stop, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_VTABLE_END
 };
 
-
 int Satellite::listen_dbus() {
-	// dbus setup:
-	// TODO use libuv for waiting for sdbus socket.
-	// https://github.com/systemd/systemd/blob/493fd52f1ada36bfe63301d4bb50f7fd2b38c670/src/libsystemd/sd-bus/sd-bus.c#L2904
-
-	sd_bus_slot *slot = nullptr;
+	int cuurent_events;
+	uint64_t usec;
 	int r;
 
 	// open bus: system or user
+	this->bus_slot = nullptr;
+	this->bus = nullptr;
 	r = sd_bus_open_user(&this->bus);
+
 	if (r < 0) {
-		std::cout << "failed to connect to bus: "
+		std::cout << "[dbus] Failed to connect to system/user bus:  "
 		          << strerror(-r) << std::endl;
-		goto finish;
+		goto clean_return;
 	}
 
-	// install the object
+	// install the horst object
 	r = sd_bus_add_object_vtable(
 		this->bus,
-		&slot,
+		&this->bus_slot,
 		"/warr/moveII/horst",  // object path
 		"warr.moveII.horst",   // interface name
 		horst_vtable,
-		nullptr
+		this
 	);
 
 	if (r < 0) {
-		std::cout << "[dbus] failed to issue method call: "
+		std::cout << "[dbus] Failed to install the horst sdbus object:  "
 		          << strerror(-r) << std::endl;
-		goto finish;
+		goto clean_return;
 	}
 
 	/* Take a well-known service name so that clients can find us */
@@ -203,40 +305,36 @@ int Satellite::listen_dbus() {
 	if (r < 0) {
 		std::cout << "[dbus] failed to acquire service name: "
 		          << strerror(-r) << std::endl;
-		goto finish;
+		goto clean_return;
 	}
 
-	// TODO: register the filedescriptor from
+
+	// ### two events are already queued, we need to process them
+	//     in order to allow libuv to start the poll on the fd
+	r = sd_bus_process(this->bus, nullptr);
+	r = sd_bus_process(this->bus, nullptr);
+
+
+	// register the filedescriptor from
 	//       sd_bus_get_fd(bus) to libuv
+	cuurent_events = sd_bus_get_events(this->bus);
+	sd_bus_get_timeout(this->bus, &usec);
+	uv_poll_init(&this->loop, &this->dbus_connection,
+	             sd_bus_get_fd(this->bus));
 
 
-	/*
-	// TODO: use the libuv loop instead of this one.
-	while (true) {
-		r = sd_bus_process(bus, nullptr);
-		if (r < 0) {
-			std::cout << "[dbus] failed to process bus: "
-			          << strerror(-r) << std::endl;
-			goto finish;
-		}
-		if (r > 0)
-			continue;
+	// make `this` reachable in callbacks.
+	this->dbus_connection.data = this;
+	uv_poll_start(&this->dbus_connection,
+	              UV_READABLE | UV_WRITABLE | UV_DISCONNECT,
+	              &Satellite::on_dbus_ready);
 
-		r = sd_bus_wait(bus, (uint64_t) -1);
-		if (r < 0) {
-			std::cout << "[dbus] failed to wait on bus: "
-			          << strerror(-r) << std::endl;
-			goto finish;
-		}
-	}
-	*/
-
+	log("[dbus] listner initialized ");
 	return 0;
 
-finish:
-	sd_bus_slot_unref(slot);
+clean_return:
+	sd_bus_slot_unref(this->bus_slot);
 	sd_bus_unref(this->bus);
-
 	this->bus = nullptr;
 
 	return 1;
@@ -245,6 +343,15 @@ finish:
 
 uv_loop_t *Satellite::get_loop() {
 	return &this->loop;
+}
+
+
+sd_bus *Satellite::get_bus() {
+	return this->bus;
+}
+
+sd_bus_slot **Satellite::get_bus_slot() {
+	return &this->bus_slot;
 }
 
 
