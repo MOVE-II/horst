@@ -2,6 +2,8 @@
 
 #include "../action/shell_command.h"
 
+#include "../process.h"
+
 
 namespace horst {
 

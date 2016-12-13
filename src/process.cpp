@@ -53,6 +53,7 @@ Process::Process(uv_loop_t *loop, const std::string &cmd) {
 void Process::exited(int64_t exit_code, int term_signal) {
 	std::cout << "[process] exited with "
 	          << exit_code << " by signal " << term_signal << std::endl;
+
 	// TODO: remove this process from the process list.
 }
 

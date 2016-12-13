@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <string>
 
 
@@ -13,6 +14,9 @@ class Satellite;
  * This may for example be "turn off battery and selfdestruct".
  */
 class Action {
+	/** callback type for notification when this action is done */
+	using done_cb_t = std::function<void(Action *action)>;
+
 public:
 	Action();
 	virtual ~Action() = default;
@@ -29,6 +33,22 @@ public:
 	 * Override it for each action type.
 	 */
 	virtual void perform(Satellite *satellite) = 0;
+
+	/**
+	 * Register a callback.
+	 */
+	void call_when_done(done_cb_t callback);
+
+protected:
+
+	/** call this when the action is finished */
+	void done();
+
+	/**
+	 * Called by done().
+	 * Might be a list of callbacks someday if we need it.
+	 */
+	done_cb_t finished;
 };
 
 } // horst

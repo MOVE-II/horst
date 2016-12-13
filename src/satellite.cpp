@@ -19,6 +19,7 @@ namespace horst {
 Satellite::Satellite(const arguments &args)
 	:
 	args{args},
+	next_id{0},
 	bus{nullptr} {
 
 	uv_loop_init(&this->loop);
@@ -35,7 +36,7 @@ Satellite::~Satellite() {
 int Satellite::run() {
 	log("[satellite] starting up connections...");
 
-	if (this->listen_tcp(this->args.port, &this->server)) {
+	if (this->listen_tcp(this->args.port)) {
 		log("[satellite] failed to set up tcp socket.");
 		return 1;
 	}
@@ -45,15 +46,20 @@ int Satellite::run() {
 		return 1;
 	}
 
+	if (this->listen_s3tp(this->args.port)) {
+		log("[satellite] failed to listen on s3tp.");
+		return 1;
+	}
+
 	// let the event loop run forever.
 	return uv_run(&this->loop, UV_RUN_DEFAULT);
 }
 
 
-int Satellite::listen_tcp(int port, uv_tcp_t *server) {
+int Satellite::listen_tcp(int port) {
 	int ret;
 
-	uv_tcp_init(&this->loop, server);
+	uv_tcp_init(&this->loop, &this->server);
 
 	std::cout << "[satellite] listening on port "
 	          << port << "..." << std::endl;
@@ -68,7 +74,7 @@ int Satellite::listen_tcp(int port, uv_tcp_t *server) {
 		return 1;
 	}
 
-	ret = uv_tcp_bind(server, (const sockaddr*) &listen_addr, 0);
+	ret = uv_tcp_bind(&this->server, (const sockaddr*) &listen_addr, 0);
 
 	if (ret) {
 		std::cout << "[satellite] can't bind to socket: "
@@ -77,11 +83,11 @@ int Satellite::listen_tcp(int port, uv_tcp_t *server) {
 	}
 
 	// make `this` reachable in callbacks.
-	server->data = this;
+	this->server.data = this;
 
 	// start to listen on the tcp socket
 	ret = uv_listen(
-		(uv_stream_t *)server,
+		(uv_stream_t *)&this->server,
 		4,  // < kernel connection queue size
 
 		// when a new connection was received:
@@ -119,10 +125,16 @@ int Satellite::listen_tcp(int port, uv_tcp_t *server) {
 }
 
 
+int Satellite::listen_s3tp(int /*port*/) {
+	// TODO register s3tp_connection to event loop.
+	return 0;
+}
+
+
 /* stupid dbus test function to provide multiplication */
 int method_multiply(sd_bus_message *m,
                            void * /*userdata*/,
-                           sd_bus_error */*ret_error*/) {
+                           sd_bus_error * /*ret_error*/) {
 	int64_t x, y;
 	int r;
 
@@ -227,13 +239,45 @@ uv_loop_t *Satellite::get_loop() {
 }
 
 
-void Satellite::add_client(std::unique_ptr<Client> &&client) {
-	this->clients.push_back(std::move(client));
+id_t Satellite::add_client(std::unique_ptr<Client> &&client) {
+	this->clients.emplace(this->next_id, std::move(client));
+	return this->next_id++;
 }
 
 
-void Satellite::add_process(std::unique_ptr<Process> &&process) {
-	this->processes.push_back(std::move(process));
+id_t Satellite::add_action(std::unique_ptr<Action> &&action) {
+	this->actions.emplace(this->next_id, std::move(action));
+	return this->next_id++;
+}
+
+
+Client *Satellite::get_client(id_t id) {
+	auto loc = this->clients.find(id);
+	if (loc == std::end(this->clients)) {
+		return nullptr;
+	} else {
+		return loc->second.get();
+	}
+}
+
+
+Action *Satellite::get_action(id_t id) {
+	auto loc = this->actions.find(id);
+	if (loc == std::end(this->actions)) {
+		return nullptr;
+	} else {
+		return loc->second.get();
+	}
+}
+
+
+void Satellite::remove_action(id_t id) {
+	auto pos = this->actions.find(id);
+	if (pos != std::end(this->actions)) {
+		this->actions.erase(pos);
+	} else {
+		std::cout << "an unknown action just finished..." << std::endl;
+	}
 }
 
 
@@ -258,9 +302,18 @@ void Satellite::on_event(std::unique_ptr<Event> &&event) {
 	// determine the actions needed to reach the target state
 	auto actions = this->current_state.transform_to(target_state);
 
-	// TODO: enqueue those actions
-	for (auto &action : actions) {
-		std::cout << "performing: " << action->describe() << std::endl;
+	for (auto &action_m : actions) {
+		std::cout << "performing: " << action_m->describe() << std::endl;
+
+		// store the action.
+		id_t id = this->add_action(std::move(action_m));
+
+		Action *action = this->get_action(id);
+		action->call_when_done([this, id] (Action *) {
+			this->remove_action(id);
+		});
+
+		// perform the action, this may just enqueue it in the event loop.
 		action->perform(this);
 	}
 }

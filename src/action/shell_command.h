@@ -1,8 +1,13 @@
 #pragma once
 
+#include <memory>
+
 #include "action.h"
 
 namespace horst {
+
+class Process;
+
 
 class ShellCommand : public Action {
 public:
@@ -12,6 +17,7 @@ public:
 	void perform(Satellite *satellite) override;
 
 protected:
+	std::unique_ptr<Process> process;
 	std::string cmd;
 };
 

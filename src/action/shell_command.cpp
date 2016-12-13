@@ -12,6 +12,7 @@ namespace horst {
 
 ShellCommand::ShellCommand(const std::string &cmd)
 	:
+	process{nullptr},
 	cmd{cmd} {}
 
 
@@ -23,9 +24,7 @@ std::string ShellCommand::describe() const {
 
 
 void ShellCommand::perform(Satellite *sat) {
-	auto process = std::make_unique<Process>(sat->get_loop(), this->cmd);
-
-	sat->add_process(std::move(process));
+	this->process = std::make_unique<Process>(sat->get_loop(), this->cmd);
 }
 
 } // horst

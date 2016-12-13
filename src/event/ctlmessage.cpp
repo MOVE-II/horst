@@ -99,6 +99,14 @@ ShellCommandReq::ShellCommandReq(const std::string &command)
 
 
 void ShellCommandReq::update(State &state) {
+	// to reach the target state, just add the shell command
+	// to the execution list.
+
+	// TODO: the shell command must find back to the client it originated
+	//       from.
+	//       the client created the ControlMessage
+
+	// TODO: add a class for the command that stores (client, command)
 	state.computer.shell_commands.push_back(this->cmd);
 }
 

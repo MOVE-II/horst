@@ -3,13 +3,13 @@
 #include <memory>
 #include <queue>
 #include <systemd/sd-bus.h>
+#include <unordered_map>
 #include <uv.h>
 #include <vector>
 
 #include "client/client.h"
 #include "event/event.h"
 #include "horst.h"
-#include "process.h"
 #include "state/state.h"
 
 
@@ -35,12 +35,17 @@ public:
 	 * Set up listening on the given TCP port for
 	 * debugging clients.
 	 */
-	int listen_tcp(int port, uv_tcp_t *server);
+	int listen_tcp(int port);
 
 	/**
 	 * Register the listening on dbus.
 	 */
 	int listen_dbus();
+
+	/**
+	 * Set up listening on the s3tp port.
+	 */
+	int listen_s3tp(int port);
 
 	/**
 	 * Return the event loop.
@@ -50,12 +55,27 @@ public:
 	/**
 	 * Add this client to the list.
 	 */
-	void add_client(std::unique_ptr<Client> &&client);
+	id_t add_client(std::unique_ptr<Client> &&client);
 
 	/**
 	 * Add this process to the list.
 	 */
-	void add_process(std::unique_ptr<Process> &&proc);
+	id_t add_action(std::unique_ptr<Action> &&action);
+
+	/**
+	 * get a client by id.
+	 */
+	Client *get_client(id_t id);
+
+	/**
+	 * get a action by id.
+	 */
+	Action *get_action(id_t id);
+
+	/**
+	 * Purge a given action from the active map.
+	 */
+	void remove_action(id_t id);
 
 	/**
 	 * Called from all the callbacks that receive some external event.
@@ -72,11 +92,19 @@ private:
 	/** tcp server for control clients */
 	uv_tcp_t server;
 
-	/** list of control clients connected */
-	std::vector<std::unique_ptr<Client>> clients;
+	/** s3tp unix socket watcher */
+	uv_loop_t s3tp_connection;
 
-	/** list of processes executed */
-	std::vector<std::unique_ptr<Process>> processes;
+	/** list of control clients connected */
+	std::unordered_map<id_t, std::unique_ptr<Client>> clients;
+
+	/** list of running actions */
+	std::unordered_map<id_t, std::unique_ptr<Action>> actions;
+
+	/**
+	 * counter to identify events.
+	 */
+	id_t next_id;
 
 	/**
 	 * dbus bus handle
