@@ -2,10 +2,10 @@
 
 #include <cstddef>
 #include <iostream>
-#include <sstream>
-#include <tuple>
 
-#include "../state/state.h"
+#include "req_daemon_control.h"
+#include "req_procedure_call.h"
+#include "req_shell_command.h"
 
 
 namespace horst {
@@ -95,75 +95,6 @@ void ControlMessage::done(const std::string &result) {
 	if (this->on_done) {
 		this->on_done(result);
 	}
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-// Now follow all the possible control messages.
-//////////////////////////////////////////////////////////////////////////////
-
-ProcedureCallReq::ProcedureCallReq(const std::string &name)
-	:
-	name{name} {}
-
-
-void ProcedureCallReq::update(State &/*state*/) {
-	// TODO: enqueue procedure
-}
-
-
-ShellCommandReq::ShellCommandReq(const std::string &command)
-	:
-	cmd{command} {}
-
-
-void ShellCommandReq::update(State &state) {
-	// to reach the target state, just add the shell command
-	// to the execution list.
-
-	state.computer.shell_commands.push_back(
-		std::make_tuple(
-			this->cmd,
-			std::static_pointer_cast<ControlMessage>(this->shared_from_this())
-		)
-	);
-}
-
-
-DaemonControlReq::DaemonControlReq(daemon_ctl_action_t action,
-                                   const std::string &service_name)
-	:
-	action{action},
-	service_name{service_name} {}
-
-
-void DaemonControlReq::update(State &state) {
-	std::stringstream command;
-	command << "sudo systemctl";
-
-	switch (this->action) {
-	case daemon_ctl_action_t::START:
-		command << "start";
-		break;
-	case daemon_ctl_action_t::STOP:
-		command << "stop";
-		break;
-	case daemon_ctl_action_t::RESTART:
-		command << "restart";
-		break;
-	case daemon_ctl_action_t::STATUS:
-		command << "status";
-		break;
-	}
-
-	command << this->service_name;
-
-	state.computer.shell_commands.push_back(
-		std::make_tuple(
-			command.str(),
-			std::static_pointer_cast<ControlMessage>(this->shared_from_this())
-		)
-	);
 }
 
 }  // horst

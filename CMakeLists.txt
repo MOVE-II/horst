@@ -24,6 +24,9 @@ add_executable(horst
 	src/error.cpp
 	src/event/ctlmessage.cpp
 	src/event/event.cpp
+	src/event/req_daemon_control.cpp
+	src/event/req_procedure_call.cpp
+	src/event/req_shell_command.cpp
 	src/horst.cpp
 	src/log.cpp
 	src/procedure/procedure.cpp
