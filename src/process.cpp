@@ -6,11 +6,16 @@
 
 namespace horst {
 
-Process::Process(uv_loop_t *loop, const std::string &cmd) {
+Process::Process(uv_loop_t *loop, const std::string &cmd,
+                 proc_exit_cb_t on_exit)
+	:
+	cmd{cmd},
+	on_exit{on_exit},
+	exit_code{-1} {
+
 	std::cout << "[process] created for '" << cmd << "'" << std::endl;
 
-	this->handle.data = this;
-
+	// TODO: implement proper sh lexing so we don't need to run sh -c
 	const char *proc_args[4] = {
 		"sh", "-c", cmd.c_str(), nullptr
 	};
@@ -22,14 +27,26 @@ Process::Process(uv_loop_t *loop, const std::string &cmd) {
 	char *args_cpy[4];
 	memcpy(&args_cpy, &proc_args, sizeof(args_cpy));
 
-	options.exit_cb = [] (uv_process_t *req,
-	                      int64_t exit_status,
-	                      int term_signal) {
+	this->handle.data = this;
+	this->options.exit_cb = [] (uv_process_t *req,
+	                            int64_t exit_status,
+	                            int /*term_signal*/) {
 
 		Process *this_ = (Process *) req->data;
-		uv_close((uv_handle_t*) req, nullptr);
 
-		this_->exited(exit_status, term_signal);
+		this_->exit_code = exit_status;
+
+		// close the process handle,
+		// call the actual exited callback after that.
+		// this is because the exited() function will free the memory.
+		uv_close(
+			(uv_handle_t*) req,
+			[] (uv_handle_t *handle) {
+
+				Process *this_ = (Process *) handle->data;
+				this_->exited();
+			}
+		);
 	};
 
 	this->options.file = "sh";
@@ -39,6 +56,14 @@ Process::Process(uv_loop_t *loop, const std::string &cmd) {
 	if ((r = uv_spawn(loop, &this->handle, &this->options))) {
 		std::cout << "[process] failed spawning: "
 		          << uv_strerror(r) << std::endl;
+
+		this->exit_code = -1;
+
+		// TODO unsure if we need to close the handle here as well.
+		// we only close it in the options.exit_cb at the moment.
+		// dunno what happens if the spawn fails.
+
+		this->exited();
 	}
 	else {
 		std::cout << "[process] launched process with id "
@@ -46,15 +71,16 @@ Process::Process(uv_loop_t *loop, const std::string &cmd) {
 	}
 }
 
+
 // TODO: this could be extended to capture the output of the process
 // https://nikhilm.github.io/uvbook/processes.html#child-process-i-o
 
 
-void Process::exited(int64_t exit_code, int term_signal) {
-	std::cout << "[process] exited with "
-	          << exit_code << " by signal " << term_signal << std::endl;
-
-	// TODO: remove this process from the process list.
+void Process::exited() {
+	// call the process exit callback.
+	if (this->on_exit) {
+		this->on_exit(this, this->exit_code);
+	}
 }
 
 } // horst
