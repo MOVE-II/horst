@@ -12,8 +12,10 @@ class TCPClient : public Client {
 public:
 	TCPClient(Satellite *satellite);
 
-	TCPClient(TCPClient &&other);
-	TCPClient &operator =(TCPClient &&other);
+	TCPClient(TCPClient &&other) = delete;
+	TCPClient(const TCPClient &other) = delete;
+	TCPClient &operator =(TCPClient &&other) = delete;
+	TCPClient &operator =(const TCPClient &other) = delete;
 
 	virtual ~TCPClient() override;
 
