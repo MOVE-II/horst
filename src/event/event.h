@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+
+
 namespace horst {
 
 class State;
@@ -8,7 +11,7 @@ class State;
 /**
  * An external event that is handled by horst.
  */
-class Event {
+class Event : public std::enable_shared_from_this<Event> {
 public:
 	Event();
 	virtual ~Event() = default;

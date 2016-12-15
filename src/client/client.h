@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 
 
 namespace horst {
@@ -40,6 +41,12 @@ public:
 	 * internally calls this->send(text, strlen(text))
 	 */
 	void send(const char *text);
+
+	/**
+	 * call this to send cpp-strings.
+	 * internally calls this->send(text.c_str(), text.size())
+	 */
+	void send(const std::string &text);
 
 	/** close the connection */
 	virtual void close() = 0;

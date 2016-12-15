@@ -85,7 +85,7 @@ public:
 	/**
 	 * Called from all the callbacks that receive some external event.
 	 */
-	void on_event(std::unique_ptr<Event> &&event);
+	void on_event(std::shared_ptr<Event> &&event);
 
 private:
 	/** program launch arguments */

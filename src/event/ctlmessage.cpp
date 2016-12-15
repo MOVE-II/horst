@@ -3,19 +3,22 @@
 #include <cstddef>
 #include <iostream>
 #include <sstream>
+#include <tuple>
 
 #include "../state/state.h"
 
 
 namespace horst {
 
-ControlMessage::ControlMessage() {}
+ControlMessage::ControlMessage()
+	:
+	on_done{nullptr} {}
 
 
-std::unique_ptr<ControlMessage>
+std::shared_ptr<ControlMessage>
 ControlMessage::parse(const std::string &msg) {
 
-	std::unique_ptr<ControlMessage> ret = nullptr;
+	std::shared_ptr<ControlMessage> ret = nullptr;
 
 	std::cout << "[event] parsing control message: " << msg << std::endl;
 	std::size_t first_space = msg.find(" ");
@@ -83,6 +86,22 @@ bool ControlMessage::is_fact() const {
 }
 
 
+void ControlMessage::call_on_complete(done_cb_t on_done) {
+	this->on_done = on_done;
+}
+
+
+void ControlMessage::done(const std::string &result) {
+	if (this->on_done) {
+		this->on_done(result);
+	}
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+// Now follow all the possible control messages.
+//////////////////////////////////////////////////////////////////////////////
+
 ProcedureCallReq::ProcedureCallReq(const std::string &name)
 	:
 	name{name} {}
@@ -102,12 +121,12 @@ void ShellCommandReq::update(State &state) {
 	// to reach the target state, just add the shell command
 	// to the execution list.
 
-	// TODO: the shell command must find back to the client it originated
-	//       from.
-	//       the client created the ControlMessage
-
-	// TODO: add a class for the command that stores (client, command)
-	state.computer.shell_commands.push_back(this->cmd);
+	state.computer.shell_commands.push_back(
+		std::make_tuple(
+			this->cmd,
+			std::static_pointer_cast<ControlMessage>(this->shared_from_this())
+		)
+	);
 }
 
 
@@ -139,7 +158,12 @@ void DaemonControlReq::update(State &state) {
 
 	command << this->service_name;
 
-	state.computer.shell_commands.push_back(command.str());
+	state.computer.shell_commands.push_back(
+		std::make_tuple(
+			command.str(),
+			std::static_pointer_cast<ControlMessage>(this->shared_from_this())
+		)
+	);
 }
 
 }  // horst

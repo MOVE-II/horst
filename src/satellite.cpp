@@ -302,7 +302,7 @@ void Satellite::remove_client(id_t id) {
 }
 
 
-void Satellite::on_event(std::unique_ptr<Event> &&event) {
+void Satellite::on_event(std::shared_ptr<Event> &&event) {
 	// called for each event the satellite receives
 	// it may come from earth or any other subsystem
 

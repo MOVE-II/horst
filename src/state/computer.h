@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "../action/action.h"
@@ -10,6 +11,9 @@
 
 namespace horst {
 
+class ControlMessage;
+
+
 /**
  * Represents the state of this board computer.
  */
@@ -17,7 +21,10 @@ class Computer : public StateComponent {
 public:
 	Computer();
 
-	std::vector<std::string> shell_commands;
+	std::vector<
+		std::tuple<
+			std::string,
+			std::shared_ptr<ControlMessage>>> shell_commands;
 
 	std::vector<std::unique_ptr<Action>> transform_to(const Computer &target);
 };

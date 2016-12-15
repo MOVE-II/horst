@@ -68,11 +68,19 @@ void Client::data_received(const char *data, size_t size) {
 	this->buf_used -= npos + 1;
 
 	for (auto &entry : seglist) {
+		// get a shared pointer of the control message
 		auto cmd = ControlMessage::parse(entry);
 
 		if (cmd.get() != nullptr) {
 			// handle each command in the event handler
+			cmd->call_on_complete([this] (const std::string &result) {
+				this->send(result);
+			});
+
+			// actually handle the event in the satellite state logic
 			this->satellite->on_event(std::move(cmd));
+
+			// immediately send back that the command was received.
 			this->send("ack\n");
 		}
 		else {
@@ -83,6 +91,10 @@ void Client::data_received(const char *data, size_t size) {
 
 void Client::send(const char *text) {
 	this->send(text, strlen(text));
+}
+
+void Client::send(const std::string &text) {
+	this->send(text.c_str(), text.size());
 }
 
 
