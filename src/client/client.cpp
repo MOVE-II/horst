@@ -12,11 +12,12 @@
 
 namespace horst {
 
-Client::Client(Satellite *satellite)
+Client::Client(Satellite *satellite, close_cb_t on_close)
 	:
 	satellite{satellite},
 	buf{std::make_unique<char[]>(this->max_buf_size)},
-	buf_used{0} {}
+	buf_used{0},
+	on_close{on_close} {}
 
 
 void Client::data_received(const char *data, size_t size) {
@@ -83,5 +84,18 @@ void Client::data_received(const char *data, size_t size) {
 void Client::send(const char *text) {
 	this->send(text, strlen(text));
 }
+
+
+void Client::call_on_close(close_cb_t on_close) {
+	this->on_close = on_close;
+}
+
+
+void Client::closed() {
+	if (this->on_close) {
+		this->on_close(this);
+	}
+}
+
 
 } // horst

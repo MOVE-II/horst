@@ -10,7 +10,7 @@ namespace horst {
 
 class TCPClient : public Client {
 public:
-	TCPClient(Satellite *satellite);
+	TCPClient(Satellite *satellite, close_cb_t on_close=nullptr);
 
 	TCPClient(TCPClient &&other) = delete;
 	TCPClient(const TCPClient &other) = delete;

@@ -106,11 +106,20 @@ int Satellite::listen_tcp(int port) {
 
 			// accept the connection on the listening socket
 			if (client->accept(server)) {
-				this_->add_client(std::move(client));
+				id_t id = this_->add_client(std::move(client));
+				Client *stored_client = this_->get_client(id);
+
+				// when the client connection closes,
+				// remove the handle to the stored client.
+				stored_client->call_on_close(
+					[this_, id] (Client *) {
+						this_->remove_client(id);
+					}
+				);
 			}
 			else {
 				std::cout << "[satellite] failed to accept tcp client"
-				<< std::endl;
+				          << std::endl;
 			}
 		}
 	);
@@ -276,7 +285,19 @@ void Satellite::remove_action(id_t id) {
 	if (pos != std::end(this->actions)) {
 		this->actions.erase(pos);
 	} else {
-		std::cout << "an unknown action just finished..." << std::endl;
+		std::cout << "attempt to remove an unknown action..."
+		          << std::endl;
+	}
+}
+
+
+void Satellite::remove_client(id_t id) {
+	auto pos = this->clients.find(id);
+	if (pos != std::end(this->clients)) {
+		this->clients.erase(pos);
+	} else {
+		std::cout << "attempt to remove an unknown client..."
+		          << std::endl;
 	}
 }
 

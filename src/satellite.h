@@ -78,6 +78,11 @@ public:
 	void remove_action(id_t id);
 
 	/**
+	 * Purge a given client from the active map.
+	 */
+	void remove_client(id_t id);
+
+	/**
 	 * Called from all the callbacks that receive some external event.
 	 */
 	void on_event(std::unique_ptr<Event> &&event);

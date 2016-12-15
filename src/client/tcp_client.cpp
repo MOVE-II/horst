@@ -7,9 +7,10 @@
 
 namespace horst {
 
-TCPClient::TCPClient(Satellite *satellite)
+TCPClient::TCPClient(Satellite *satellite,
+                     close_cb_t on_close)
 	:
-	Client{satellite},
+	Client{satellite, on_close},
 	connection{std::make_unique<uv_tcp_t>()},
 	server{nullptr} {
 
@@ -19,9 +20,7 @@ TCPClient::TCPClient(Satellite *satellite)
 }
 
 
-TCPClient::~TCPClient() {
-	this->close();
-}
+TCPClient::~TCPClient() {}
 
 
 bool TCPClient::accept(uv_stream_t *server) {
@@ -129,18 +128,21 @@ void TCPClient::connection_lost(int code) {
 		std::cout << "[client] tcp connection lost: " << code << std::endl;
 	}
 
-	// no longer use the callback
-	uv_read_stop(this->get_stream());
-
 	this->close();
-
-	// TODO: remove from parent container
 }
 
 
 void TCPClient::close() {
+	uv_read_stop(this->get_stream());
+
 	if (not uv_is_closing(this->get_handle())) {
-		uv_close(this->get_handle(), nullptr);
+		uv_close(
+			this->get_handle(),
+			[] (uv_handle_t *handle) {
+				TCPClient *this_ = (TCPClient *) handle->data;
+				this_->closed();
+			}
+		);
 	}
 }
 
