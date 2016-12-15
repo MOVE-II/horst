@@ -23,12 +23,14 @@ std::string ShellCommand::describe() const {
 }
 
 
-void ShellCommand::perform(Satellite *sat) {
+void ShellCommand::perform(Satellite *sat, ac_done_cb_t done) {
 	this->process = std::make_unique<Process>(
 		sat->get_loop(), this->cmd,
-		[this] (Process *, int64_t exit_code) {
+		[this, done] (Process *, int64_t exit_code) {
 			std::cout << "[process] exited with " << exit_code << std::endl;
-			this->done();
+			if (done) {
+				done(this);
+			}
 		}
 	);
 }

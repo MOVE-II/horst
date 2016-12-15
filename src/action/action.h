@@ -6,7 +6,13 @@
 
 namespace horst {
 
+
+class Action;
 class Satellite;
+
+
+/** callback type for notification when this action is done */
+using ac_done_cb_t = std::function<void(Action *action)>;
 
 
 /**
@@ -14,9 +20,6 @@ class Satellite;
  * This may for example be "turn off battery and selfdestruct".
  */
 class Action {
-	/** callback type for notification when this action is done */
-	using done_cb_t = std::function<void(Action *action)>;
-
 public:
 	Action();
 	virtual ~Action() = default;
@@ -31,24 +34,12 @@ public:
 	 * This may mean to enqueue something in the event loop,
 	 * or whatever is needed to do.
 	 * Override it for each action type.
+	 *
+	 * The callback is called in the function
+	 * when the action was performed.
 	 */
-	virtual void perform(Satellite *satellite) = 0;
-
-	/**
-	 * Register a callback.
-	 */
-	void call_when_done(done_cb_t callback);
-
-protected:
-
-	/** call this when the action is finished */
-	void done();
-
-	/**
-	 * Called by done().
-	 * Might be a list of callbacks someday if we need it.
-	 */
-	done_cb_t finished;
+	virtual void perform(Satellite *satellite,
+	                     ac_done_cb_t done=nullptr) = 0;
 };
 
 } // horst

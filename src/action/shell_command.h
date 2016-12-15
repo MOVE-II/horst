@@ -14,7 +14,7 @@ public:
 	ShellCommand(const std::string &cmd);
 
 	std::string describe() const override;
-	void perform(Satellite *satellite) override;
+	void perform(Satellite *satellite, ac_done_cb_t done) override;
 
 protected:
 	std::unique_ptr<Process> process;

@@ -305,16 +305,20 @@ void Satellite::on_event(std::unique_ptr<Event> &&event) {
 	for (auto &action_m : actions) {
 		std::cout << "performing: " << action_m->describe() << std::endl;
 
-		// store the action.
+		// store the action
 		id_t id = this->add_action(std::move(action_m));
 
+		// and fetch its new location
 		Action *action = this->get_action(id);
-		action->call_when_done([this, id] (Action *) {
-			this->remove_action(id);
-		});
 
 		// perform the action, this may just enqueue it in the event loop.
-		action->perform(this);
+		// the callback is executed when the action is done.
+		action->perform(
+			this,
+			[this, id] (Action *) {
+				this->remove_action(id);
+			}
+		);
 	}
 }
 
