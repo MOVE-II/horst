@@ -5,7 +5,10 @@
 #include <vector>
 
 #include "../action/action.h"
+#include "com.h"
 #include "computer.h"
+#include "eps.h"
+#include "thm.h"
 
 
 namespace horst {
@@ -28,12 +31,12 @@ public:
 	/**
 	 * Return a list of actions necessary to perform
 	 * to reach the given target state of the satellite.
+	 *
+	 * This function is the most important one of the whole satellite.
+	 * All the logic of when to do what is implemented here!!!!
 	 */
 	std::vector<std::unique_ptr<Action>>
 	transform_to(const State &target);
-
-	// TODO: list of properties that make up the state.
-	//       the properties are attached to subsystem daemons.
 
 	/**
 	 * State of the satellite's main computer.
@@ -42,6 +45,15 @@ public:
 	 * shell commands etc.
 	 */
 	Computer computer;
+
+	/** State of the power supply */
+	EPS eps;
+
+	/** State of the COM transciever */
+	COM com;
+
+	/** State of the thermal subsystem */
+	THM thm;
 };
 
 } // horst

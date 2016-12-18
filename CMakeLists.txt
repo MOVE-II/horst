@@ -40,9 +40,12 @@ add_executable(horst
 	src/procedure/procedure_vm.cpp
 	src/process.cpp
 	src/satellite.cpp
+	src/state/com.cpp
 	src/state/computer.cpp
+	src/state/eps.cpp
 	src/state/state.cpp
 	src/state/state_component.cpp
+	src/state/thm.cpp
 	src/util.cpp
 )
 
