@@ -12,7 +12,7 @@ class Satellite;
 
 
 /** callback type for notification when this action is done */
-using ac_done_cb_t = std::function<void(Action *action)>;
+using ac_done_cb_t = std::function<void(bool success, Action *action)>;
 
 
 /**

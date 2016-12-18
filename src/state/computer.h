@@ -21,12 +21,19 @@ class Computer : public StateComponent {
 public:
 	Computer();
 
+	std::vector<std::unique_ptr<Action>> transform_to(const Computer &target);
+
+	/** list of shell commands to fire. */
 	std::vector<
 		std::tuple<
 			std::string,
 			std::shared_ptr<ControlMessage>>> shell_commands;
 
-	std::vector<std::unique_ptr<Action>> transform_to(const Computer &target);
+	/** list of procedures to call */
+	std::vector<
+		std::tuple<
+			std::string,
+			std::shared_ptr<ControlMessage>>> procedures;
 };
 
 } // horst

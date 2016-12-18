@@ -17,6 +17,7 @@ set(CMAKE_BUILD_TYPE DEBUG)
 
 add_executable(horst
 	src/action/action.cpp
+	src/action/procedure_call.cpp
 	src/action/shell_command.cpp
 	src/client/client.cpp
 	src/client/tcp_client.cpp
@@ -29,8 +30,14 @@ add_executable(horst
 	src/event/req_shell_command.cpp
 	src/horst.cpp
 	src/log.cpp
+	src/procedure/instruction/halt.cpp
+	src/procedure/instruction/instruction.cpp
+	src/procedure/instruction/loadc.cpp
+	src/procedure/instruction/nop.cpp
+	src/procedure/instruction/sleep.cpp
 	src/procedure/procedure.cpp
-	src/procedure/procedure_step.cpp
+	src/procedure/procedure_manager.cpp
+	src/procedure/procedure_vm.cpp
 	src/process.cpp
 	src/satellite.cpp
 	src/state/computer.cpp

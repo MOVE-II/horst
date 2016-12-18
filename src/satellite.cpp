@@ -279,6 +279,10 @@ Action *Satellite::get_action(id_t id) {
 	}
 }
 
+const Procedure *Satellite::get_procedure(const std::string &name) const {
+	return this->procedures.get_procedure(name);
+}
+
 
 void Satellite::remove_action(id_t id) {
 	auto pos = this->actions.find(id);
@@ -324,19 +328,28 @@ void Satellite::on_event(std::shared_ptr<Event> &&event) {
 	auto actions = this->current_state.transform_to(target_state);
 
 	for (auto &action_m : actions) {
-		std::cout << "performing: " << action_m->describe() << std::endl;
-
 		// store the action
 		id_t id = this->add_action(std::move(action_m));
 
 		// and fetch its new location
 		Action *action = this->get_action(id);
 
+		std::cout << "[action] run #" << id << ": "
+		          << action->describe() << std::endl;
+
 		// perform the action, this may just enqueue it in the event loop.
 		// the callback is executed when the action is done.
 		action->perform(
 			this,
-			[this, id] (Action *) {
+			[this, id] (bool success, Action *) {
+				if (not success) {
+					std::cout << "[action] #"
+					          << id << " failed!" << std::endl;
+				}
+				else {
+					std::cout << "[action] #"
+					          << id << " succeeded!" << std::endl;
+				}
 				this->remove_action(id);
 			}
 		);

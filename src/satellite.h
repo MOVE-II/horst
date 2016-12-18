@@ -10,6 +10,7 @@
 #include "client/client.h"
 #include "event/event.h"
 #include "horst.h"
+#include "procedure/procedure_manager.h"
 #include "state/state.h"
 
 
@@ -17,7 +18,12 @@ namespace horst {
 
 class Satellite {
 public:
+	/**
+	 * Create the satellite controller.
+	 * Pass its configuration.
+	 */
 	Satellite(const arguments &args);
+
 	Satellite(Satellite &&) = delete;
 	Satellite(const Satellite &) = delete;
 	Satellite& operator =(Satellite &&) = delete;
@@ -73,6 +79,11 @@ public:
 	Action *get_action(id_t id);
 
 	/**
+	 * Find a procedure. If not found, return nullptr.
+	 */
+	const Procedure *get_procedure(const std::string &name) const;
+
+	/**
 	 * Purge a given action from the active map.
 	 */
 	void remove_action(id_t id);
@@ -115,6 +126,11 @@ private:
 	 * dbus bus handle
 	 */
 	sd_bus *bus;
+
+	/**
+	 * Available procedures.
+	 */
+	ProcedureManager procedures;
 
 	/**
 	 * current state of the satellite.

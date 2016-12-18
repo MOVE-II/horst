@@ -36,7 +36,10 @@ public:
 	//       the properties are attached to subsystem daemons.
 
 	/**
-	 * State of the satellites main computer.
+	 * State of the satellite's main computer.
+	 *
+	 * Used for changes required on the system like program starts,
+	 * shell commands etc.
 	 */
 	Computer computer;
 };
