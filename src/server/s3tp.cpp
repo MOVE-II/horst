@@ -84,8 +84,7 @@ namespace horst {
 		uv_poll_start(&this->connection,
 		              UV_READABLE | UV_WRITABLE | UV_DISCONNECT,
 		              S3TPServer::on_s3tp_event);
-
-
+		              
 		return 0;
 	}
 
