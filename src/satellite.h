@@ -43,11 +43,6 @@ public:
 	int listen_dbus();
 
 	/**
-	 * Set up listening on the s3tp port.
-	 */
-	int listen_s3tp(int port);
-
-	/**
 	 * Return the event loop.
 	 */
 	uv_loop_t *get_loop();
