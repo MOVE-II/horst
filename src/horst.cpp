@@ -7,7 +7,6 @@
 #include <string>
 
 #include "error.h"
-#include "logger.h"
 #include "satellite.h"
 #include "util.h"
 

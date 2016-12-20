@@ -7,7 +7,6 @@
 #include <unistd.h>
 
 #include "../event/ctlmessage.h"
-#include "../logger.h"
 #include "../satellite.h"
 
 

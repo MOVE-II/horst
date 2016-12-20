@@ -13,7 +13,6 @@
 #include "../event/req_shell_command.h"
 #include "../event/safemode_req.h"
 #include "../event/thm_signal.h"
-#include "../logger.h"
 #include "../satellite.h"
 #include "../state/thm.h"
 #include "../util.h"

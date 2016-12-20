@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 project(horst CXX)
-set(PROJECT_BRIEF "Horst is the brain of our satellite.")
+set(PROJECT_BRIEF "Horst is the brain of Move2 satellite.")
 
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 0)
@@ -9,9 +9,11 @@ include(version/version.cmake)
 message("configuring horst...")
 
 set(CMAKE_CXX_COMPILER clang++)
-
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+find_package(s3tp REQUIRED)
+include_directories(${S3TP_INCLUDE_DIRS})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic") # -fsanitize=address,undefined")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
@@ -19,6 +21,11 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
 set(CMAKE_BUILD_TYPE RELEASE)
 
+include_directories("${PROJECT_SOURCE_DIR}")
+include_directories("${PROJECT_SOURCE_DIR}/action")
+include_directories("${PROJECT_SOURCE_DIR}/client")
+include_directories("${PROJECT_SOURCE_DIR}/event")
+include_directories("${PROJECT_SOURCE_DIR}/server")
 
 add_executable(horst
 	src/action/action.cpp
@@ -64,11 +71,10 @@ add_executable(horst
 	${version_file}
 )
 
-target_link_libraries(horst
-	uv
-	systemd
-	dl
-)
+target_link_libraries(horst uv)
+target_link_libraries(horst systemd)
+target_link_libraries(horst dl)
+target_link_libraries(horst ${S3TP_LIBRARY})
 
 install(
 	TARGETS horst

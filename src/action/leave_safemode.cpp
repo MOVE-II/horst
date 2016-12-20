@@ -3,7 +3,6 @@
 #include <sstream>
 
 #include "../event/safemode_signal.h"
-#include "../logger.h"
 #include "../satellite.h"
 
 

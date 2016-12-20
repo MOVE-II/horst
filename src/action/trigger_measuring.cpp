@@ -3,7 +3,6 @@
 #include <sstream>
 
 #include "../event/payload_signal.h"
-#include "../logger.h"
 #include "../satellite.h"
 #include "../state/payload.h"
 
