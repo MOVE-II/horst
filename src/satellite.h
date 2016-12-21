@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <queue>
-#include <systemd/sd-bus.h>
 #include <unordered_map>
 #include <uv.h>
 #include <vector>
@@ -11,6 +10,8 @@
 #include "event/event.h"
 #include "horst.h"
 #include "procedure/procedure_manager.h"
+#include "server/dbus.h"
+#include "server/tcp.h"
 #include "state/state.h"
 
 
@@ -36,12 +37,6 @@ public:
 	 * @returns program exit code
 	 */
 	int run();
-
-	/**
-	 * Set up listening on the given TCP port for
-	 * debugging clients.
-	 */
-	int listen_tcp(int port);
 
 	/**
 	 * Register the listening on dbus.
@@ -105,11 +100,14 @@ private:
 	/** the event loop used */
 	uv_loop_t loop;
 
-	/** tcp server for control clients */
-	uv_tcp_t server;
-
 	/** s3tp unix socket watcher */
 	uv_loop_t s3tp_connection;
+
+	/** DBus connection */
+	DBusConnection dbus;
+
+	/** TCP connection server */
+	TCPServer tcp_server;
 
 	/** list of control clients connected */
 	std::unordered_map<id_t, std::unique_ptr<Client>> clients;
@@ -121,11 +119,6 @@ private:
 	 * counter to identify events.
 	 */
 	id_t next_id;
-
-	/**
-	 * dbus bus handle
-	 */
-	sd_bus *bus;
 
 	/**
 	 * Available procedures.

@@ -40,6 +40,9 @@ add_executable(horst
 	src/procedure/procedure_vm.cpp
 	src/process.cpp
 	src/satellite.cpp
+	src/server/dbus.cpp
+	src/server/s3tp.cpp
+	src/server/tcp.cpp
 	src/state/com.cpp
 	src/state/computer.cpp
 	src/state/eps.cpp

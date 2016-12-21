@@ -2,7 +2,9 @@
 
 #include <cxxabi.h>
 #include <dlfcn.h>
+#include <poll.h>
 #include <sstream>
+#include <uv.h>
 
 
 namespace horst {
@@ -58,6 +60,21 @@ std::string symbol_name(const void *addr,
 			return out.str();
 		}
 	}
+}
+
+
+int poll_to_libuv_events(int pollflags) {
+	int ret = 0;
+	if (pollflags & (POLLIN | POLLPRI)) {
+		ret |= UV_READABLE;
+	}
+	if (pollflags & POLLOUT) {
+		ret |= UV_WRITABLE;
+	}
+
+	// we also have the non-corresponding UV_DISCONNECT
+
+	return ret;
 }
 
 }} // horst::util

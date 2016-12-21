@@ -46,7 +46,7 @@ public:
 
 protected:
 	/** connection stream */
-	std::unique_ptr<uv_tcp_t> connection;
+	uv_tcp_t connection;
 
 	/** server associated to the client */
 	uv_stream_t *server;
