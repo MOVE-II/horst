@@ -11,12 +11,11 @@ TCPClient::TCPClient(Satellite *satellite,
                      close_cb_t on_close)
 	:
 	Client{satellite, on_close},
-	connection{std::make_unique<uv_tcp_t>()},
 	server{nullptr} {
 
 	// initialize the stream client handle:
-	uv_tcp_init(this->satellite->get_loop(), this->connection.get());
-	this->connection->data = this;
+	uv_tcp_init(this->satellite->get_loop(), &this->connection);
+	this->connection.data = this;
 }
 
 
@@ -148,11 +147,11 @@ void TCPClient::close() {
 
 
 uv_stream_t *TCPClient::get_stream() {
-	return reinterpret_cast<uv_stream_t *>(this->connection.get());
+	return reinterpret_cast<uv_stream_t *>(&this->connection);
 }
 
 uv_handle_t *TCPClient::get_handle() {
-	return reinterpret_cast<uv_handle_t *>(this->connection.get());
+	return reinterpret_cast<uv_handle_t *>(&this->connection);
 }
 
 } // horst

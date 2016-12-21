@@ -51,4 +51,8 @@ void vector_extend(std::vector<T> &vec, std::vector<T> &&ext) {
 }
 
 
+/** convert poll flags to libuv event flags */
+int poll_to_libuv_events(int pollflags);
+
+
 }} // horst::util
