@@ -169,6 +169,12 @@ void Satellite::on_event(std::shared_ptr<Event> &&event) {
 					std::cout << "[action] #"
 					          << id << " succeeded!" << std::endl;
 				}
+
+				// tell all systems that this action was finished.
+				this->dbus.emit_action_done(success, id);
+
+				// the last action in here must be the free of the
+				// action from memory:
 				this->remove_action(id);
 			}
 		);

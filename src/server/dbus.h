@@ -3,6 +3,8 @@
 #include <systemd/sd-bus.h>
 #include <uv.h>
 
+#include "../id.h"
+
 
 namespace horst {
 
@@ -34,7 +36,17 @@ public:
 	 */
 	sd_bus *get_bus();
 
+	/**
+	 * emit a signal that an action was finished.
+	 */
+	void emit_action_done(bool success, id_t action);
+
 protected:
+	/**
+	 * Register all signals relevant for us.
+	 */
+	void watch_for_signals();
+
 	Satellite *satellite;
 	uv_loop_t *loop;
 
