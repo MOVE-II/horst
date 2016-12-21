@@ -18,7 +18,7 @@ static void on_dbus_ready(uv_poll_t *handle,
                           int /*status*/,
                           int events) {
 
-	std::cout << "[bbus] bus is ready for some events: "
+	std::cout << "[dbus] bus is ready for some events: "
 	          << events << std::endl;
 
 	DBusConnection *connection = (DBusConnection *)handle->data;
@@ -198,10 +198,9 @@ int DBusConnection::connect() {
 	uv_timer_init(this->loop, &this->timer);
 	this->timer.data = this;
 
+	// process initial events and set up the
+	// events and timers for subsequent calls
 	on_dbus_ready(&this->connection, 0, 0);
-
-	// install the callbacks
-	this->update_events();
 
 	std::cout << "[dbus] listner initialized " << std::endl;
 	return 0;
