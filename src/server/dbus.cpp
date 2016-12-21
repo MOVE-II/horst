@@ -255,6 +255,9 @@ void DBusConnection::emit_action_done(bool success, id_t action) {
 	if (r < 0) {
 		std::cout << "failed to emit action_done" << std::endl;
 	}
+
+	// the signal can be sent out
+	this->update_events();
 }
 
 
@@ -276,6 +279,9 @@ void DBusConnection::watch_for_signals() {
 			// DBusConnection *this_ = (DBusConnection *) userdata;
 
 			std::cout << "[dbus] payload measurement done." << std::endl;
+
+			// TODO: mark the done in the state table
+
 			return 0;
 		},
 		this
@@ -298,6 +304,9 @@ void DBusConnection::watch_for_signals() {
 			// DBusConnection *this_ = (DBusConnection *) userdata;
 
 			std::cout << "[dbus] eps battery level x." << std::endl;
+
+			// TODO: mark the information in the state table
+
 			return 0;
 		},
 		this
