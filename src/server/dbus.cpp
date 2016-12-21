@@ -18,7 +18,7 @@ static void on_dbus_ready(uv_poll_t *handle,
                           int /*status*/,
                           int events) {
 
-	std::cout << "[bbus] bus is ready for some events: "
+	std::cout << "[dbus] bus is ready for some events: "
 	          << events << std::endl;
 
 	DBusConnection *connection = (DBusConnection *)handle->data;
@@ -146,6 +146,7 @@ static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_VTABLE_START(0),
 	SD_BUS_METHOD("run", "s", "x", dbus_run, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("exec", "s", "x", dbus_exec, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_SIGNAL("actionDone", "bt", 0),
 	SD_BUS_VTABLE_END
 };
 
@@ -198,10 +199,12 @@ int DBusConnection::connect() {
 	uv_timer_init(this->loop, &this->timer);
 	this->timer.data = this;
 
-	on_dbus_ready(&this->connection, 0, 0);
+	// register which signals are interesting for horst
+	this->watch_for_signals();
 
-	// install the callbacks
-	this->update_events();
+	// process initial events and set up the
+	// events and timers for subsequent calls
+	on_dbus_ready(&this->connection, 0, 0);
 
 	std::cout << "[dbus] listner initialized " << std::endl;
 	return 0;
@@ -236,6 +239,72 @@ Satellite *DBusConnection::get_sat() {
 
 sd_bus *DBusConnection::get_bus() {
 	return this->bus;
+}
+
+
+void DBusConnection::emit_action_done(bool success, id_t action) {
+	int r = sd_bus_emit_signal(
+		this->bus,
+		"/moveii/horst",
+		"moveii.horst",
+		"actionDone",
+		"bt",
+		success,
+		action
+	);
+	if (r < 0) {
+		std::cout << "failed to emit action_done" << std::endl;
+	}
+}
+
+
+void DBusConnection::watch_for_signals() {
+
+	// set up watched signals
+	// https://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-routing-match-rules
+
+	int r = sd_bus_add_match(
+		this->bus,
+		nullptr,
+		"type='signal',"
+		"sender='moveii.pl',"
+		"member='payloadMeasurementDone'",
+		[] (sd_bus_message * /*m*/,
+		    void * /*userdata*/,
+		    sd_bus_error * /*ret_error*/) -> int {
+
+			// DBusConnection *this_ = (DBusConnection *) userdata;
+
+			std::cout << "[dbus] payload measurement done." << std::endl;
+			return 0;
+		},
+		this
+	);
+	if (r < 0) {
+		std::cout << "Failed to add payload done match" << std::endl;
+	}
+
+
+	r = sd_bus_add_match(
+		this->bus,
+		nullptr,
+		"type='signal',"
+		"sender='moveii.eps',"
+		"member='batteryLevelX'",
+		[] (sd_bus_message * /*m*/,
+		    void * /*userdata*/,
+		    sd_bus_error * /*ret_error*/) -> int {
+
+			// DBusConnection *this_ = (DBusConnection *) userdata;
+
+			std::cout << "[dbus] eps battery level x." << std::endl;
+			return 0;
+		},
+		this
+	);
+	if (r < 0) {
+		std::cout << "Failed to add eps battery level x match" << std::endl;
+	}
 }
 
 }  // horst

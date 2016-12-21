@@ -9,6 +9,7 @@
 #include "client/client.h"
 #include "event/event.h"
 #include "horst.h"
+#include "id.h"
 #include "procedure/procedure_manager.h"
 #include "server/dbus.h"
 #include "server/tcp.h"
