@@ -1,0 +1,27 @@
+stages:
+    - build
+
+.build_base: &build_base
+  stage: build
+  before_script:
+    - git clone http://gitlab-ci-token:${CI_BUILD_TOKEN}@gitlab.lrz.de/move-ii/cdh_utilities.git
+    - DEPENDENCIES=()
+    - CMAKELISTS=(CMakeLists.txt)
+  script:
+    - source cdh_utilities/run_ci_cmake.sh
+  artifacts:
+    paths:
+      - "*.tar.gz"
+      - "deps/version_*.txt"
+
+ubuntu:
+  <<: *build_base
+  image: tum/move:ubuntu
+
+beaglebone:
+  <<: *build_base
+  image: tum/move:beagle
+
+cdh:
+  <<: *build_base
+  image: tum/move:cdh

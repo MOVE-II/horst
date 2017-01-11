@@ -57,3 +57,9 @@ target_link_libraries(horst
 	systemd
 	dl
 )
+
+install(
+	TARGETS horst
+	RUNTIME
+	DESTINATION bin
+)
