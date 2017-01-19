@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "../event/debugstuff.h"
 #include "../event/req_procedure_call.h"
 #include "../event/req_shell_command.h"
 #include "../satellite.h"
@@ -142,10 +143,34 @@ static int dbus_run(sd_bus_message *m,
 }
 
 
+static int dbus_set(sd_bus_message *m,
+                    void *userdata,
+                    sd_bus_error * /*ret_error*/) {
+
+	DBusConnection *this_ = (DBusConnection *)userdata;
+	const char *name;
+	int r = sd_bus_message_read(m, "s", &name);
+	if (r < 0) {
+		std::cout << "[dbus] set() failed to parse parameters: "
+		          << strerror(-r) << std::endl;
+		return r;
+	}
+
+	std::cout << "[dbus] set() debug: " << name << std::endl;
+
+	auto req = std::make_shared<DebugStuff>(name);
+	this_->get_sat()->on_event(std::move(req));
+
+	return sd_bus_reply_method_return(m, "x", 0);
+}
+
+
 static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_VTABLE_START(0),
 	SD_BUS_METHOD("run", "s", "x", dbus_run, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("exec", "s", "x", dbus_exec, SD_BUS_VTABLE_UNPRIVILEGED),
+	// debugging function: remove it!
+	SD_BUS_METHOD("set", "s", "x", dbus_set, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_SIGNAL("actionDone", "bt", 0),
 	SD_BUS_VTABLE_END
 };

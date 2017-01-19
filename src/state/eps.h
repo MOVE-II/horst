@@ -30,6 +30,11 @@ public:
 		ON,
 		WAIT_ON
 	} sband;
+
+	/**
+	 * battery level in %
+	 */
+	int battery_level;
 };
 
 } // horst

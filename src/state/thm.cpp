@@ -3,7 +3,9 @@
 
 namespace horst {
 
-THM::THM() {}
+THM::THM()
+	:
+	all_temp{all_temp::OK} {}
 
 std::vector<std::unique_ptr<Action>>
 THM::transform_to(const THM & /*target*/) {

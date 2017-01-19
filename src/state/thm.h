@@ -27,6 +27,15 @@ public:
 		GOOD,
 		BAD
 	} sband_temp;
+
+	/**
+	 * overall temperature state of the satellite.
+	 */
+	enum class all_temp {
+		OK,
+		WARN,
+		ALARM,
+	} all_temp;
 };
 
 } // horst

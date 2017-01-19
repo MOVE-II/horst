@@ -3,7 +3,9 @@
 
 namespace horst {
 
-EPS::EPS() {}
+EPS::EPS()
+	:
+	battery_level{100} {}
 
 std::vector<std::unique_ptr<Action>>
 EPS::transform_to(const EPS & /*target*/) {
