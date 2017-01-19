@@ -17,7 +17,7 @@ class EPS : public StateComponent {
 public:
 	EPS();
 
-	std::vector<std::unique_ptr<Action>> transform_to(const EPS &target);
+	std::vector<std::unique_ptr<Action>> transform_to(const EPS &target) const;
 
 	/**
 	 * Power state of sband.

@@ -17,7 +17,7 @@ class THM : public StateComponent {
 public:
 	THM();
 
-	std::vector<std::unique_ptr<Action>> transform_to(const THM &target);
+	std::vector<std::unique_ptr<Action>> transform_to(const THM &target) const;
 
 	/**
 	 * Temperature state of sband.

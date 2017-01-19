@@ -12,7 +12,7 @@ namespace horst {
 Computer::Computer() {}
 
 std::vector<std::unique_ptr<Action>>
-Computer::transform_to(const Computer &target) {
+Computer::transform_to(const Computer &target) const {
 
 	std::vector<std::unique_ptr<Action>> ret;
 

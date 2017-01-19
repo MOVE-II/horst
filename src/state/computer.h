@@ -21,7 +21,7 @@ class Computer : public StateComponent {
 public:
 	Computer();
 
-	std::vector<std::unique_ptr<Action>> transform_to(const Computer &target);
+	std::vector<std::unique_ptr<Action>> transform_to(const Computer &target) const;
 
 	/** list of shell commands to fire. */
 	std::vector<

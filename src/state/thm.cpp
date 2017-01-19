@@ -8,7 +8,7 @@ THM::THM()
 	all_temp{all_temp::OK} {}
 
 std::vector<std::unique_ptr<Action>>
-THM::transform_to(const THM & /*target*/) {
+THM::transform_to(const THM & /*target*/) const {
 
 	std::vector<std::unique_ptr<Action>> ret;
 

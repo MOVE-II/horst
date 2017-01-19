@@ -36,7 +36,7 @@ public:
 	 * All the logic of when to do what is implemented here!!!!
 	 */
 	std::vector<std::unique_ptr<Action>>
-	transform_to(const State &target);
+	transform_to(const State &target) const;
 
 	/**
 	 * State of the satellite's main computer.

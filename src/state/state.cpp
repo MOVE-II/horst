@@ -15,7 +15,7 @@ State State::copy() const {
 }
 
 
-std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) {
+std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) const {
 	// this function is the "state transition table"
 	// it calculates what actions are required to reach the target state.
 
