@@ -30,6 +30,7 @@ add_executable(horst
 	src/event/req_procedure_call.cpp
 	src/event/req_shell_command.cpp
 	src/event/safe_mode_entered.cpp
+	src/event/thm_signal.cpp
 	src/horst.cpp
 	src/log.cpp
 	src/procedure/instruction/halt.cpp

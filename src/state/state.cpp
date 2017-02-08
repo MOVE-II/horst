@@ -25,7 +25,7 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 	util::vector_extend(ret, this->computer.transform_to(target.computer));
 
 
-	if ((this->thm.all_temp == THM::all_temp::ALARM or
+	if ((this->thm.all_temp == THM::overall_temp::ALARM or
 	     this->eps.battery_level < 20) and
 	    this->safe_mode == false) {
 

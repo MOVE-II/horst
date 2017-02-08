@@ -31,7 +31,7 @@ public:
 	/**
 	 * overall temperature state of the satellite.
 	 */
-	enum class all_temp {
+	enum class overall_temp {
 		OK,
 		WARN,
 		ALARM,

@@ -3,13 +3,17 @@
 #include <iostream>
 
 #include "../event/debugstuff.h"
+#include "../event/thm_signal.h"
 #include "../event/req_procedure_call.h"
 #include "../event/req_shell_command.h"
+#include "../state/thm.h"
 #include "../satellite.h"
 #include "../util.h"
 
 
 namespace horst {
+
+Satellite* globalsat;
 
 /*
  * callback method used by libuv to notify when
@@ -315,13 +319,44 @@ void DBusConnection::watch_for_signals() {
 		std::cout << "Failed to add payload done match" << std::endl;
 	}
 
+	/* Ugly hack to get this Satellite into the callback :/ */
+	globalsat = this->get_sat();
+
+	r = sd_bus_add_match(
+		this->bus,
+		nullptr,
+		"type='signal',"
+		"sender='moveii.thm',"
+		"member='thmStateChange'",
+		[] (sd_bus_message* m, void*, sd_bus_error*) -> int {
+			uint8_t thmlevel;
+			int r;
+
+			r = sd_bus_message_read(m, "y", &thmlevel);
+			if (r < 0) {
+				std::cout << "[dbus] Failed to receive THM state change!" << std::endl;
+				return 0;
+			}
+			std::cout << "[dbus] THM state changed to " << (int) thmlevel << std::endl;
+
+			/* Generate fact and send it to state logic */
+			auto req = std::make_shared<THMSignal>(static_cast<THM::overall_temp>(thmlevel));
+			globalsat->on_event(std::move(req));
+
+			return 0;
+		},
+		this
+	);
+	if (r < 0) {
+		std::cout << "Failed to add thm temperature level x match" << std::endl;
+	}
 
 	r = sd_bus_add_match(
 		this->bus,
 		nullptr,
 		"type='signal',"
 		"sender='moveii.eps',"
-		"member='batteryLevelX'",
+		"member='epsChargeStateChange'",
 		[] (sd_bus_message * /*m*/,
 		    void * /*userdata*/,
 		    sd_bus_error * /*ret_error*/) -> int {
