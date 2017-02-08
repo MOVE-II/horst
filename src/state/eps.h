@@ -32,9 +32,9 @@ public:
 	} sband;
 
 	/**
-	 * battery level in %
+	 * battery level in [0.01]% (that means 1000 => 10% battery left)
 	 */
-	int battery_level;
+	uint16_t battery_level;
 };
 
 } // horst

@@ -26,7 +26,7 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 
 
 	if ((this->thm.all_temp == THM::overall_temp::ALARM or
-	     this->eps.battery_level < 20) and
+	     this->eps.battery_level < 2000) and
 	    this->safe_mode == false) {
 
 		ret.push_back(std::make_unique<EnterSafeMode>());

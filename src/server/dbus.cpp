@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "../event/debugstuff.h"
+#include "../event/eps_signal.h"
 #include "../event/thm_signal.h"
 #include "../event/req_procedure_call.h"
 #include "../event/req_shell_command.h"
@@ -357,22 +358,27 @@ void DBusConnection::watch_for_signals() {
 		"type='signal',"
 		"sender='moveii.eps',"
 		"member='epsChargeStateChange'",
-		[] (sd_bus_message * /*m*/,
-		    void * /*userdata*/,
-		    sd_bus_error * /*ret_error*/) -> int {
+		[] (sd_bus_message* m, void*, sd_bus_error*) -> int {
+			uint16_t bat;
+			int r;
 
-			// DBusConnection *this_ = (DBusConnection *) userdata;
+			r = sd_bus_message_read(m, "q", &bat);
+			if (r < 0) {
+				std::cout << "[dbus] Failed to receive EPS battery state change!" << std::endl;
+				return 0;
+			}
+			std::cout << "[dbus] EPS battery state changed to " << (int) bat << std::endl;
 
-			std::cout << "[dbus] eps battery level x." << std::endl;
-
-			// TODO: mark the information in the state table
+			/* Generate fact and send it to state logic */
+			auto req = std::make_shared<EPSSignal>(bat);
+			globalsat->on_event(std::move(req));
 
 			return 0;
 		},
 		this
 	);
 	if (r < 0) {
-		std::cout << "Failed to add eps battery level x match" << std::endl;
+		std::cout << "Failed to add EPS battery level x match" << std::endl;
 	}
 }
 
