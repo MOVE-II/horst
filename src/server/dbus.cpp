@@ -4,6 +4,7 @@
 
 #include "../event/debugstuff.h"
 #include "../event/eps_signal.h"
+#include "../event/safemode_req.h"
 #include "../event/thm_signal.h"
 #include "../event/req_procedure_call.h"
 #include "../event/req_shell_command.h"
@@ -14,7 +15,10 @@
 
 namespace horst {
 
-Satellite* globalsat;
+/* Very ugly hack to get the satellite object everywhere :/
+ * Better working ideas welcome ;)
+ */
+static Satellite* globalsat;
 
 /*
  * callback method used by libuv to notify when
@@ -59,7 +63,7 @@ DBusConnection::DBusConnection(Satellite *sat)
 	satellite{sat},
 	loop{sat->get_loop()},
 	bus{nullptr},
-	bus_slot{nullptr} {}
+	bus_slot{nullptr} { globalsat = sat; }
 
 
 DBusConnection::~DBusConnection() {}
@@ -169,6 +173,23 @@ static int dbus_set(sd_bus_message *m,
 	return sd_bus_reply_method_return(m, "x", 0);
 }
 
+static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
+	DBusConnection *this_ = (DBusConnection *)userdata;
+	bool safemode;
+	int r = sd_bus_message_read(m, "b", &safemode);
+	if (r < 0) {
+		std::cout << "[dbus] safemode() failed to parse parameters: "
+		          << strerror(-r) << std::endl;
+		return r;
+	}
+
+	std::cout << "[dbus] safemode() debug: " << safemode << std::endl;
+
+	auto req = std::make_shared<SafeModeReq>(safemode);
+	globalsat->on_event(std::move(req));
+
+	return sd_bus_reply_method_return(m, "b", true);
+}
 
 static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_VTABLE_START(0),
@@ -176,6 +197,7 @@ static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_METHOD("exec", "s", "x", dbus_exec, SD_BUS_VTABLE_UNPRIVILEGED),
 	// debugging function: remove it!
 	SD_BUS_METHOD("set", "s", "x", dbus_set, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("safemode", "b", "b", dbus_safemode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_SIGNAL("actionDone", "bt", 0),
 	SD_BUS_VTABLE_END
 };

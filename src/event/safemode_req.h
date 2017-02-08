@@ -10,16 +10,19 @@
 namespace horst {
 
 /**
- * Emitted when the safe mode was entered successfully.
+ * Shows up if entering/leaving safe mode has been requested
  */
-class SafeModeEntered : public Event {
+class SafeModeReq : public Event {
 public:
-	SafeModeEntered();
-	virtual ~SafeModeEntered() = default;
+	SafeModeReq(bool);
+	virtual ~SafeModeReq() = default;
 
 	bool is_fact() const override;
 
 	void update(State &state) override;
+
+protected:
+	bool wanted;
 };
 
 } // horst

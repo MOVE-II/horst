@@ -17,7 +17,8 @@ set(CMAKE_BUILD_TYPE DEBUG)
 
 add_executable(horst
 	src/action/action.cpp
-	src/action/enter_safe_mode.cpp
+	src/action/enter_safemode.cpp
+	src/action/leave_safemode.cpp
 	src/action/procedure_call.cpp
 	src/action/shell_command.cpp
 	src/client/client.cpp
@@ -30,7 +31,8 @@ add_executable(horst
 	src/event/req_daemon_control.cpp
 	src/event/req_procedure_call.cpp
 	src/event/req_shell_command.cpp
-	src/event/safe_mode_entered.cpp
+	src/event/safemode_req.cpp
+	src/event/safemode_signal.cpp
 	src/event/thm_signal.cpp
 	src/horst.cpp
 	src/log.cpp
