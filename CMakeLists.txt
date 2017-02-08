@@ -22,7 +22,6 @@ add_executable(horst
 	src/action/shell_command.cpp
 	src/client/client.cpp
 	src/client/tcp_client.cpp
-	src/daemon.cpp
 	src/error.cpp
 	src/event/ctlmessage.cpp
 	src/event/event.cpp
