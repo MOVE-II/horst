@@ -4,12 +4,13 @@
 
 #include "../event/debugstuff.h"
 #include "../event/eps_signal.h"
-#include "../event/safemode_req.h"
-#include "../event/thm_signal.h"
+#include "../event/manualmode_req.h"
 #include "../event/req_procedure_call.h"
 #include "../event/req_shell_command.h"
-#include "../state/thm.h"
+#include "../event/safemode_req.h"
+#include "../event/thm_signal.h"
 #include "../satellite.h"
+#include "../state/thm.h"
 #include "../util.h"
 
 
@@ -171,7 +172,7 @@ static int dbus_set(sd_bus_message *m,
 static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	DBusConnection *this_ = (DBusConnection *)userdata;
 	bool safemode;
-	int r = sd_bus_message_read(m, "b", &safemode);
+	int r = sd_bus_message_read(m, "y", &safemode);
 	if (r < 0) {
 		std::cout << "[dbus] safemode() failed to parse parameters: "
 		          << strerror(-r) << std::endl;
@@ -186,13 +187,34 @@ static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	return sd_bus_reply_method_return(m, "b", true);
 }
 
+static int dbus_manualmode(sd_bus_message *m, void *userdata, sd_bus_error*) {
+	DBusConnection *this_ = (DBusConnection *)userdata;
+	bool manualmode;
+	int r = sd_bus_message_read(m, "y", &manualmode);
+	if (r < 0) {
+		std::cout << "[dbus] manualmode() failed to parse parameters: "
+		          << strerror(-r) << std::endl;
+		return r;
+	}
+
+	std::cout << "[dbus] manualmode() debug: " << manualmode << std::endl;
+
+	auto req = std::make_shared<ManualModeReq>(manualmode);
+	this_->get_sat()->on_event(std::move(req));
+
+	return sd_bus_reply_method_return(m, "b", true);
+}
+
 static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_VTABLE_START(0),
 	SD_BUS_METHOD("run", "s", "x", dbus_run, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("exec", "s", "x", dbus_exec, SD_BUS_VTABLE_UNPRIVILEGED),
 	// debugging function: remove it!
 	SD_BUS_METHOD("set", "s", "x", dbus_set, SD_BUS_VTABLE_UNPRIVILEGED),
-	SD_BUS_METHOD("safemode", "b", "b", dbus_safemode, SD_BUS_VTABLE_UNPRIVILEGED),
+	// b as input does not work. Reading it from the message seems to
+	// destroy the userdata pointer (systemd bug?). Using y instead...
+	SD_BUS_METHOD("safemode", "y", "b", dbus_safemode, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("manualmode", "y", "b", dbus_manualmode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_SIGNAL("actionDone", "bt", 0),
 	SD_BUS_VTABLE_END
 };
