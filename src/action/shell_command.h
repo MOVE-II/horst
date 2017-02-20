@@ -3,10 +3,10 @@
 #include <memory>
 
 #include "action.h"
+#include "../process.h"
 
 namespace horst {
 
-class Process;
 class ControlMessage;
 
 
