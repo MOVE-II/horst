@@ -4,22 +4,25 @@
 #include <memory>
 #include <string>
 
+#include "../state/thm.h"
 #include "event.h"
 
 
 namespace horst {
 
 /**
- * Emitted when the safe mode was entered successfully.
+ * Emitted when the EPS battery state changes
  */
-class SafeModeEntered : public Event {
+class EPSSignal : public Event {
 public:
-	SafeModeEntered();
-	virtual ~SafeModeEntered() = default;
+	EPSSignal(uint16_t);
+	virtual ~EPSSignal() = default;
 
 	bool is_fact() const override;
 
 	void update(State &state) override;
+protected:
+	uint16_t bat;
 };
 
 } // horst

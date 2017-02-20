@@ -3,8 +3,12 @@
 #include <iostream>
 
 #include "../event/debugstuff.h"
+#include "../event/eps_signal.h"
+#include "../event/safemode_req.h"
+#include "../event/thm_signal.h"
 #include "../event/req_procedure_call.h"
 #include "../event/req_shell_command.h"
+#include "../state/thm.h"
 #include "../satellite.h"
 #include "../util.h"
 
@@ -54,7 +58,7 @@ DBusConnection::DBusConnection(Satellite *sat)
 	satellite{sat},
 	loop{sat->get_loop()},
 	bus{nullptr},
-	bus_slot{nullptr} {}
+	bus_slot{nullptr} { }
 
 
 DBusConnection::~DBusConnection() {}
@@ -164,6 +168,23 @@ static int dbus_set(sd_bus_message *m,
 	return sd_bus_reply_method_return(m, "x", 0);
 }
 
+static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
+	DBusConnection *this_ = (DBusConnection *)userdata;
+	bool safemode;
+	int r = sd_bus_message_read(m, "b", &safemode);
+	if (r < 0) {
+		std::cout << "[dbus] safemode() failed to parse parameters: "
+		          << strerror(-r) << std::endl;
+		return r;
+	}
+
+	std::cout << "[dbus] safemode() debug: " << safemode << std::endl;
+
+	auto req = std::make_shared<SafeModeReq>(safemode);
+	this_->get_sat()->on_event(std::move(req));
+
+	return sd_bus_reply_method_return(m, "b", true);
+}
 
 static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_VTABLE_START(0),
@@ -171,6 +192,7 @@ static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_METHOD("exec", "s", "x", dbus_exec, SD_BUS_VTABLE_UNPRIVILEGED),
 	// debugging function: remove it!
 	SD_BUS_METHOD("set", "s", "x", dbus_set, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("safemode", "b", "b", dbus_safemode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_SIGNAL("actionDone", "bt", 0),
 	SD_BUS_VTABLE_END
 };
@@ -315,29 +337,64 @@ void DBusConnection::watch_for_signals() {
 		std::cout << "Failed to add payload done match" << std::endl;
 	}
 
-
 	r = sd_bus_add_match(
 		this->bus,
 		nullptr,
 		"type='signal',"
-		"sender='moveii.eps',"
-		"member='batteryLevelX'",
-		[] (sd_bus_message * /*m*/,
-		    void * /*userdata*/,
-		    sd_bus_error * /*ret_error*/) -> int {
+		"sender='moveii.thm',"
+		"member='thmStateChange'",
+		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
+			DBusConnection *this_ = (DBusConnection *) userdata;
+			uint8_t thmlevel;
+			int r;
 
-			// DBusConnection *this_ = (DBusConnection *) userdata;
+			r = sd_bus_message_read(m, "y", &thmlevel);
+			if (r < 0) {
+				std::cout << "[dbus] Failed to receive THM state change!" << std::endl;
+				return 0;
+			}
+			std::cout << "[dbus] THM state changed to " << (int) thmlevel << std::endl;
 
-			std::cout << "[dbus] eps battery level x." << std::endl;
-
-			// TODO: mark the information in the state table
+			/* Generate fact and send it to state logic */
+			auto req = std::make_shared<THMSignal>(static_cast<THM::overall_temp>(thmlevel));
+			this_->get_sat()->on_event(std::move(req));
 
 			return 0;
 		},
 		this
 	);
 	if (r < 0) {
-		std::cout << "Failed to add eps battery level x match" << std::endl;
+		std::cout << "Failed to add thm temperature level x match" << std::endl;
+	}
+
+	r = sd_bus_add_match(
+		this->bus,
+		nullptr,
+		"type='signal',"
+		"sender='moveii.eps',"
+		"member='epsChargeStateChange'",
+		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
+			DBusConnection *this_ = (DBusConnection *) userdata;
+			uint16_t bat;
+			int r;
+
+			r = sd_bus_message_read(m, "q", &bat);
+			if (r < 0) {
+				std::cout << "[dbus] Failed to receive EPS battery state change!" << std::endl;
+				return 0;
+			}
+			std::cout << "[dbus] EPS battery state changed to " << (int) bat << std::endl;
+
+			/* Generate fact and send it to state logic */
+			auto req = std::make_shared<EPSSignal>(bat);
+			this_->get_sat()->on_event(std::move(req));
+
+			return 0;
+		},
+		this
+	);
+	if (r < 0) {
+		std::cout << "Failed to add EPS battery level x match" << std::endl;
 	}
 }
 

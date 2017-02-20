@@ -47,7 +47,7 @@ public:
 	Computer computer;
 
 	/** safe mode is active on the satellite */
-	bool safe_mode;
+	bool safemode;
 
 	/** State of the power supply */
 	EPS eps;

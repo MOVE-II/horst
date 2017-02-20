@@ -10,7 +10,6 @@ namespace horst {
 
 class Satellite;
 
-
 class DBusConnection {
 public:
 	DBusConnection(Satellite *sat);
