@@ -10,21 +10,24 @@
 
 namespace horst {
 
-EnterSafeMode::EnterSafeMode() {}
+EnterSafeMode::EnterSafeMode()
+    : ShellCommand("./scripts/enter_safemode.sh", nullptr) {}
 
 
 std::string EnterSafeMode::describe() const {
 	std::stringstream ss;
-	ss << "enter safe mode";
+	ss << "Enter safe mode";
 	return ss.str();
 }
 
 
 void EnterSafeMode::perform(Satellite *sat, ac_done_cb_t done) {
-	std::cout << "safe mode was entered!" << std::endl;
-	sat->on_event(std::make_shared<SafeModeSignal>(true));
-
-	done(true, this);
+	std::cout << "Start entering safe mode!" << std::endl;
+	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
+		std::cout << "Safe mode was entered!" << std::endl;
+		sat->on_event(std::make_shared<SafeModeSignal>(true));
+		done(success, action);
+	});
 }
 
 } // horst
