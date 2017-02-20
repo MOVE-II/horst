@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.1)
-project(horst CXX)
+project(horst)
+set(PROJECT_BRIEF "Horst is the brain of our satellite.")
+
+set(VERSION_MAJOR 0)
+set(VERSION_MINOR 1)
+include(version/version.cmake)
 
 message("configuring horst...")
 
@@ -56,6 +61,7 @@ add_executable(horst
 	src/state/state_component.cpp
 	src/state/thm.cpp
 	src/util.cpp
+	${version_file}
 )
 
 target_link_libraries(horst
@@ -69,3 +75,7 @@ install(
 	RUNTIME
 	DESTINATION bin
 )
+
+# doxygen build
+set(DOXYGEN_TARGETS horst)
+include(doc/docs.cmake)

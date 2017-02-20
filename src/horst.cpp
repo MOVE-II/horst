@@ -9,6 +9,7 @@
 #include "error.h"
 #include "log.h"
 #include "satellite.h"
+#include "version.h"
 
 /**
  * Contains all components of horst, the move-II state controller.
@@ -98,7 +99,7 @@ int run(int argc, char **argv) {
 		// set the global args
 		args = parse_args(argc, argv);
 
-		std::cout << "[horst] launching..." << std::endl;
+		std::cout << "Starting Horst " << VERSION << std::endl;
 
 		Satellite move2{args};
 
