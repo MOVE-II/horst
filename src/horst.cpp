@@ -9,7 +9,7 @@
 #include "error.h"
 #include "log.h"
 #include "satellite.h"
-#include "version.h"
+#include "../version/version.cpp.in"
 
 /**
  * Contains all components of horst, the move-II state controller.

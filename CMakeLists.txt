@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(horst)
+project(horst CXX)
 set(PROJECT_BRIEF "Horst is the brain of our satellite.")
 
 set(VERSION_MAJOR 0)
@@ -61,7 +61,6 @@ add_executable(horst
 	src/state/state_component.cpp
 	src/state/thm.cpp
 	src/util.cpp
-	${version_file}
 )
 
 target_link_libraries(horst

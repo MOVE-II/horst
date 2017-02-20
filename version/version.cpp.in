@@ -1,1 +1,1 @@
-const char* VERSION = "@VERSION_STRING@";
+constexpr const char* VERSION = "@VERSION_STRING@";
