@@ -16,16 +16,21 @@ EnterSafeMode::EnterSafeMode()
 
 std::string EnterSafeMode::describe() const {
 	std::stringstream ss;
-	ss << "Enter safe mode";
+	ss << "Enter safemode";
 	return ss.str();
 }
 
 
 void EnterSafeMode::perform(Satellite *sat, ac_done_cb_t done) {
-	std::cout << "Start entering safe mode!" << std::endl;
+	std::cout << "Start entering safemode!" << std::endl;
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
-		std::cout << "Safe mode was entered!" << std::endl;
-		sat->on_event(std::make_shared<SafeModeSignal>(true));
+		std::cout << "Safemode was entered!" << std::endl;
+		if (success) {
+			sat->on_event(std::make_shared<SafeModeSignal>(true));
+		} else {
+			// TODO: We should do sth. here. Maybe resetting
+			// requested state, if we have one
+		}
 		done(success, action);
 	});
 }

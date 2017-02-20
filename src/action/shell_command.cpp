@@ -43,7 +43,7 @@ void ShellCommand::perform(Satellite *sat, ac_done_cb_t done) {
 
 			// call callback set in the action (this shellcommand)
 			if (done) {
-				done(true, this);
+				done((exit_code == 0), this);
 			}
 		}
 	);
