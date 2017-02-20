@@ -15,11 +15,6 @@
 
 namespace horst {
 
-/* Very ugly hack to get the satellite object everywhere :/
- * Better working ideas welcome ;)
- */
-static Satellite* globalsat;
-
 /*
  * callback method used by libuv to notify when
  * dbus messages can be processed
@@ -63,7 +58,7 @@ DBusConnection::DBusConnection(Satellite *sat)
 	satellite{sat},
 	loop{sat->get_loop()},
 	bus{nullptr},
-	bus_slot{nullptr} { globalsat = sat; }
+	bus_slot{nullptr} { }
 
 
 DBusConnection::~DBusConnection() {}
@@ -186,7 +181,7 @@ static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	std::cout << "[dbus] safemode() debug: " << safemode << std::endl;
 
 	auto req = std::make_shared<SafeModeReq>(safemode);
-	globalsat->on_event(std::move(req));
+	this_->get_sat()->on_event(std::move(req));
 
 	return sd_bus_reply_method_return(m, "b", true);
 }
@@ -342,16 +337,14 @@ void DBusConnection::watch_for_signals() {
 		std::cout << "Failed to add payload done match" << std::endl;
 	}
 
-	/* Ugly hack to get this Satellite into the callback :/ */
-	globalsat = this->get_sat();
-
 	r = sd_bus_add_match(
 		this->bus,
 		nullptr,
 		"type='signal',"
 		"sender='moveii.thm',"
 		"member='thmStateChange'",
-		[] (sd_bus_message* m, void*, sd_bus_error*) -> int {
+		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
+			DBusConnection *this_ = (DBusConnection *) userdata;
 			uint8_t thmlevel;
 			int r;
 
@@ -364,7 +357,7 @@ void DBusConnection::watch_for_signals() {
 
 			/* Generate fact and send it to state logic */
 			auto req = std::make_shared<THMSignal>(static_cast<THM::overall_temp>(thmlevel));
-			globalsat->on_event(std::move(req));
+			this_->get_sat()->on_event(std::move(req));
 
 			return 0;
 		},
@@ -380,7 +373,8 @@ void DBusConnection::watch_for_signals() {
 		"type='signal',"
 		"sender='moveii.eps',"
 		"member='epsChargeStateChange'",
-		[] (sd_bus_message* m, void*, sd_bus_error*) -> int {
+		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
+			DBusConnection *this_ = (DBusConnection *) userdata;
 			uint16_t bat;
 			int r;
 
@@ -393,7 +387,7 @@ void DBusConnection::watch_for_signals() {
 
 			/* Generate fact and send it to state logic */
 			auto req = std::make_shared<EPSSignal>(bat);
-			globalsat->on_event(std::move(req));
+			this_->get_sat()->on_event(std::move(req));
 
 			return 0;
 		},
