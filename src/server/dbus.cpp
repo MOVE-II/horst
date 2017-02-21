@@ -186,6 +186,48 @@ static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	return sd_bus_reply_method_return(m, "b", true);
 }
 
+static int getBeaconData(sd_bus_message *m, void *userdata, sd_bus_error*) {
+	DBusConnection *this_ = (DBusConnection *)userdata;
+	State* state = this_->get_sat()->get_state();
+	std::vector<uint8_t> data;
+	sd_bus_message *retm;
+
+	// Create new return message
+	int r = sd_bus_message_new_method_return(m, &retm);
+	if (r < 0) {
+		std::cout << "Failed to create return message: " << strerror(-r) << std::endl;
+		return 0;
+	}
+
+	// Fill data
+	data.push_back((uint8_t) state->safemode);
+	// TODO: Insert manualmode
+	data.push_back((uint8_t) (state->eps.battery_level >> 8));
+	data.push_back((uint8_t) (state->eps.battery_level & 0xFF));
+	data.push_back((uint8_t) state->thm.all_temp);
+	// TODO: Insert ADCS pointing
+	// TODO: Insert ADCS pointing requested
+	// TODO: Insert Payload
+	// TODO: Insert LEOP
+
+	// Append data to message
+	r = sd_bus_message_append_array(retm, 'y', &data[0], data.size());
+	if (r < 0) {
+		std::cout << "Failed to append data to message: " << strerror(-r) << std::endl;
+		return 0;
+	}
+
+	// Send message on bus
+	r = sd_bus_send(sd_bus_message_get_bus(m), retm, NULL);
+	if (r < 0) {
+		std::cout << "Failed to reply return message: " << strerror(-r) << std::endl;
+		return 0;
+	}
+
+	sd_bus_message_unref(retm);
+	return 0;
+}
+
 static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_VTABLE_START(0),
 	SD_BUS_METHOD("run", "s", "x", dbus_run, SD_BUS_VTABLE_UNPRIVILEGED),
@@ -194,6 +236,7 @@ static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_METHOD("set", "s", "x", dbus_set, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("safemode", "b", "b", dbus_safemode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_SIGNAL("actionDone", "bt", 0),
+	SD_BUS_METHOD("getBeaconData", "", "ay", getBeaconData, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_VTABLE_END
 };
 

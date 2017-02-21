@@ -80,6 +80,11 @@ public:
 	const Procedure *get_procedure(const std::string &name) const;
 
 	/**
+	 * Get current state of satellite
+	 */
+	State *get_state();
+
+	/**
 	 * Purge a given action from the active map.
 	 */
 	void remove_action(id_t id);
