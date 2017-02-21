@@ -21,6 +21,9 @@ add_executable(horst
 	src/action/leave_safemode.cpp
 	src/action/procedure_call.cpp
 	src/action/shell_command.cpp
+	src/action/trigger_detumbling.cpp
+	src/action/trigger_measuring.cpp
+	src/action/trigger_sunpointing.cpp
 	src/client/client.cpp
 	src/client/tcp_client.cpp
 	src/error.cpp
