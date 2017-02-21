@@ -83,10 +83,16 @@ the transmitter will stay off.
 | 0       | X        | _        | _    |           0 | fallback |
 | X       | X        | 1        | _    |           _ | speed    |
 
+Further documentation
+---------------------
+
+* [Operation Manual](./doc/operation_manual.md)
+* [System Design](./doc/system_design.md)
+* [Diagram](./doc/sequence.svg)
+* Doxygen Documentation (tbd)
 
 License
 -------
-
 
 Released under the GNU GPLv3 or later.
 See [COPYING](COPYING) for further info.
