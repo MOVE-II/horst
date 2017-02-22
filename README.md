@@ -3,6 +3,8 @@ Horst
 
 Humble On-board Reconfiguration State Transformer
 
+Description
+-----------
 
 HORST is the main management software entity on the MOVE-II board computer.
 
@@ -23,70 +25,45 @@ For example, to activate S-Band transmission, the EPS has to provide enough
 power resources and OMAC is required to point the antenna towards the ground
 station. HORST's purpose is it to synchronize this activation procedure.
 
-
-Building
---------
+Installation
+------------
 
 Have a C++14 compiler and CMake.
 
-`mkdir build && cd build && cmake .. && make -j4`
-
-
-Algorithm
----------
-
-HORST works the following way:
-
-``` python
-
-current_state = State()
-
-
-while (True):
-    # sleep until some change arrives
-    event = event_loop_wait(s3tp, dbus, ...)
-
-    # update the current state with a fact
-    if event.is_fact():
-        event.update(current_state)
-
-    # or update the target state with a request
-    target_state = current_state.copy()
-    if not event.is_fact():
-        event.update(target_state)
-
-    # determine actions to perform when
-    # we change from current to target state
-    actions = current_state.transform_to(target_state)
-
-    # enqueue those actions in the event loop
-    event_loop_enqueue(actions)
+```sh
+mkdir build && cd build && cmake .. && make -j4
 ```
 
-The `current_state.transform_to` method does the actual work.
-It determines what is necessary to come from `current_state`
-to `target_state` by sending out requests. When requests are sent,
-the `current_state` is updated to store the "request in progress".
+Dependencies
+------------
 
-The transformation is done with a table.
-This table enforces constraints on the state.
+Depends on systemd for connecting to D-Bus.
 
-If some new state is requested, the `target_state` is just set to the
-desired outcome, but the transformation via this table is done afterwards.
-This means for example if the power is not ok, no matter the request,
-the transmitter will stay off.
+Artifacts
+---------
 
+- build/horst
+- src/scripts
 
-| Temp ok | Power ok | transmit | mode | -> transmit | -> mode  |
-|---------|----------|----------|------|-------------|----------|
-| X       | 0        | _        | _    |           0 | fallback |
-| 0       | X        | _        | _    |           0 | fallback |
-| X       | X        | 1        | _    |           _ | speed    |
+Usage
+-----
 
+Just run the daemon without parameters.
+
+```sh
+./horst
+```
+
+Further documentation
+---------------------
+
+* [Operation Manual](./doc/operation_manual.md)
+* [System Design](./doc/system_design.md)
+* [Diagram](./doc/sequence.svg)
+* Doxygen Documentation (tbd)
 
 License
 -------
-
 
 Released under the GNU GPLv3 or later.
 See [COPYING](COPYING) for further info.

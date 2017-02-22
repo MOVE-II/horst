@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.1)
 project(horst CXX)
+set(PROJECT_BRIEF "Horst is the brain of our satellite.")
+
+set(VERSION_MAJOR 0)
+set(VERSION_MINOR 1)
+include(version/version.cmake)
 
 message("configuring horst...")
 
@@ -17,17 +22,24 @@ set(CMAKE_BUILD_TYPE DEBUG)
 
 add_executable(horst
 	src/action/action.cpp
+	src/action/enter_manualmode.cpp
 	src/action/enter_safemode.cpp
+	src/action/leave_manualmode.cpp
 	src/action/leave_safemode.cpp
 	src/action/procedure_call.cpp
 	src/action/shell_command.cpp
+	src/action/trigger_detumbling.cpp
+	src/action/trigger_measuring.cpp
+	src/action/trigger_sunpointing.cpp
 	src/client/client.cpp
 	src/client/tcp_client.cpp
 	src/error.cpp
 	src/event/ctlmessage.cpp
 	src/event/debugstuff.cpp
-	src/event/event.cpp
 	src/event/eps_signal.cpp
+	src/event/event.cpp
+	src/event/manualmode_req.cpp
+	src/event/manualmode_signal.cpp
 	src/event/req_daemon_control.cpp
 	src/event/req_procedure_call.cpp
 	src/event/req_shell_command.cpp
@@ -69,3 +81,7 @@ install(
 	RUNTIME
 	DESTINATION bin
 )
+
+# doxygen build
+set(DOXYGEN_TARGETS horst)
+include(doc/docs.cmake)
