@@ -52,6 +52,13 @@ public:
 	/* manual mode deactivates horst logic */
 	bool manualmode;
 
+	/** The leop sequence we are in */
+	enum class leop_seq {
+		UNDEPLOYED,
+		DEPLOYED,
+		DONE
+	} leop;
+
 	/** State of the power supply */
 	EPS eps;
 

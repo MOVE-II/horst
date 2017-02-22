@@ -4,6 +4,7 @@
 
 #include "../event/debugstuff.h"
 #include "../event/eps_signal.h"
+#include "../event/leop_signal.h"
 #include "../event/manualmode_req.h"
 #include "../event/req_procedure_call.h"
 #include "../event/req_shell_command.h"
@@ -410,6 +411,36 @@ void DBusConnection::watch_for_signals() {
 			/* Generate fact and send it to state logic */
 			auto req = std::make_shared<EPSSignal>(bat);
 			this_->get_sat()->on_event(std::move(req));
+
+			return 0;
+		},
+		this
+	);
+	if (r < 0) {
+		std::cout << "Failed to add EPS battery level x match" << std::endl;
+	}
+
+	r = sd_bus_add_match(
+		this->bus,
+		nullptr,
+		"type='signal',"
+		"sender='moveii.leop',"
+		"member='leopStateChange'",
+		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
+			DBusConnection *this_ = (DBusConnection *) userdata;
+			uint8_t leop;
+			int r;
+
+			r = sd_bus_message_read(m, "y", &leop);
+			if (r < 0) {
+				std::cout << "[dbus] Failed to receive LEOP state change!" << std::endl;
+				return 0;
+			}
+			std::cout << "[dbus] LEOP state changed to " << (int) leop << std::endl;
+
+			/* Generate fact and send it to state logic */
+			auto sig = std::make_shared<LEOPSignal>(static_cast<State::leop_seq>(leop));
+			this_->get_sat()->on_event(std::move(sig));
 
 			return 0;
 		},
