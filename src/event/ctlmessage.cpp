@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <iostream>
 
+#include "../logger.h"
 #include "req_daemon_control.h"
 #include "req_procedure_call.h"
 #include "req_shell_command.h"
@@ -20,11 +21,11 @@ ControlMessage::parse(const std::string &msg) {
 
 	std::shared_ptr<ControlMessage> ret = nullptr;
 
-	std::cout << "[event] parsing control message: " << msg << std::endl;
+	LOG_DEBUG("[event] Parsing control message: " + std::string(msg));
 	std::size_t first_space = msg.find(" ");
 
 	if (first_space == std::string::npos) {
-		std::cout << "[event] no parameters given to command" << std::endl;
+		LOG_DEBUG("[event] No parameters given to command");
 		return ret;
 	}
 
@@ -36,7 +37,7 @@ ControlMessage::parse(const std::string &msg) {
 	}
 
 	if (rest.size() == 0) {
-		std::cout << "[event] parameters have a length of 0" << std::endl;
+		LOG_DEBUG("[event] Parameters have a length of 0");
 		return ret;
 	}
 
@@ -72,7 +73,7 @@ ControlMessage::parse(const std::string &msg) {
 	}
 	// TODO: more commands like "report" => StatusReport of the satellite
 	else {
-		std::cout << "[event] unhandled command: " << command_type << std::endl;
+		LOG_WARN("[event] Unhandled command: " + std::string(command_type));
 	}
 
 	return ret;

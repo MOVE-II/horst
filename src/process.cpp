@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstring>
 
+#include "logger.h"
 
 namespace horst {
 
@@ -13,7 +14,7 @@ Process::Process(uv_loop_t *loop, const std::string &cmd,
 	on_exit{on_exit},
 	exit_code{-1} {
 
-	std::cout << "[process] created for '" << cmd << "'" << std::endl;
+	LOG_INFO("[process] created for '"+ std::string(cmd) +"'");
 
 	// TODO: implement proper sh lexing so we don't need to run sh -c
 	const char *proc_args[4] = {
@@ -54,8 +55,7 @@ Process::Process(uv_loop_t *loop, const std::string &cmd,
 
 	int r;
 	if ((r = uv_spawn(loop, &this->handle, &this->options))) {
-		std::cout << "[process] failed spawning: "
-		          << uv_strerror(r) << std::endl;
+		LOG_WARN("[process] failed spawning: "+ std::string(uv_strerror(r)));
 
 		this->exit_code = -1;
 
@@ -66,8 +66,7 @@ Process::Process(uv_loop_t *loop, const std::string &cmd,
 		this->exited();
 	}
 	else {
-		std::cout << "[process] launched process with id "
-		          << this->handle.pid << std::endl;
+		LOG_INFO("[process] launched process with id : "+ std::to_string(this->handle.pid));
 	}
 }
 

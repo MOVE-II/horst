@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace horst {
 
 
@@ -9,6 +11,7 @@ namespace horst {
 struct arguments {
 	bool verbose = false;
 	int port = 9001;
+	std::string scripts = "./scripts/";
 };
 
 }

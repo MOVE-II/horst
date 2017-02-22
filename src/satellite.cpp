@@ -5,7 +5,7 @@
 
 #include "action/action.h"
 #include "client/tcp_client.h"
-#include "log.h"
+#include "logger.h"
 #include "util.h"
 
 namespace horst {
@@ -23,35 +23,34 @@ Satellite::Satellite(const arguments &args)
 
 
 Satellite::~Satellite() {
-	std::cout << "[satellite] destroying..." << std::endl;
-
+	LOG_DEBUG("[satellite] destroying...");
 	uv_loop_close(&this->loop);
 }
 
 
 int Satellite::run() {
-	log("[satellite] starting up connections...");
+	LOG_INFO("[satellite] starting up connections...");
 	int ret;
 
 	if (this->tcp_server.listen(this->args.port)) {
-		log("[satellite] failed to set up tcp socket.");
+		LOG_ERROR(3, "[satellite] failed to set up tcp socket.");
 		return 1;
 	}
 
 	if (this->dbus.connect()) {
-		log("[satellite] failed to listen on dbus.");
+		LOG_ERROR(4, "[satellite] failed to listen on dbus.");
 		return 1;
 	}
 
 	if (this->listen_s3tp(this->args.port)) {
-		log("[satellite] failed to listen on s3tp.");
+		LOG_ERROR(5, "[satellite] failed to listen on s3tp.");
 		return 1;
 	}
 
 	// let the event loop run forever.
-	log("[satellite] Starting event loop");
+	LOG_INFO("[satellite] Starting event loop");
 	ret = uv_run(&this->loop, UV_RUN_DEFAULT);
-	log("[satellite] Stopping event loop");
+	LOG_INFO("[satellite] Stopping event loop");
 	return ret;
 }
 
@@ -59,6 +58,10 @@ int Satellite::run() {
 int Satellite::listen_s3tp(int /*port*/) {
 	// TODO register s3tp_connection to event loop.
 	return 0;
+}
+
+std::string Satellite::get_scripts_path() {
+	return args.scripts;
 }
 
 
@@ -108,8 +111,7 @@ void Satellite::remove_action(id_t id) {
 	if (pos != std::end(this->actions)) {
 		this->actions.erase(pos);
 	} else {
-		std::cout << "attempt to remove an unknown action..."
-		          << std::endl;
+		LOG_WARN("[satellite] Attempt to remove an unknown action");
 	}
 }
 
@@ -119,8 +121,7 @@ void Satellite::remove_client(id_t id) {
 	if (pos != std::end(this->clients)) {
 		this->clients.erase(pos);
 	} else {
-		std::cout << "attempt to remove an unknown client..."
-		          << std::endl;
+		LOG_WARN("[satellite] Attempt to remove an unknown client");
 	}
 }
 
@@ -152,9 +153,7 @@ void Satellite::on_event(std::shared_ptr<Event> &&event) {
 
 		// and fetch its new location
 		Action *action = this->get_action(id);
-
-		std::cout << "[action] run #" << id << ": "
-		          << action->describe() << std::endl;
+		LOG_INFO("[action] run #" + std::to_string(id) + ": " + action->describe());
 
 		// perform the action, this may just enqueue it in the event loop.
 		// the callback is executed when the action is done.
@@ -162,12 +161,10 @@ void Satellite::on_event(std::shared_ptr<Event> &&event) {
 			this,
 			[this, id] (bool success, Action *) {
 				if (not success) {
-					std::cout << "[action] #"
-					          << id << " failed!" << std::endl;
+					LOG_WARN("[action] #" + std::to_string(id) + " failed!");
 				}
 				else {
-					std::cout << "[action] #"
-					          << id << " succeeded!" << std::endl;
+					LOG_INFO("[action] #" + std::to_string(id) + " succeeded");
 				}
 
 				// tell all systems that this action was finished.

@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "../client/tcp_client.h"
+#include "../logger.h"
 #include "../satellite.h"
 
 
@@ -23,24 +24,21 @@ int TCPServer::listen(int port) {
 
 	uv_tcp_init(this->satellite->get_loop(), &this->server);
 
-	std::cout << "[satellite] listening on port "
-	          << port << "..." << std::endl;
+	LOG_INFO("[satellite] Listening on port " + std::to_string(port));
 
 	// listen on tcp socket.
 	sockaddr_in6 listen_addr;
 	ret = uv_ip6_addr("::", port, &listen_addr);
 
 	if (ret) {
-		std::cout << "[satellite] can't create liste addr: "
-		          << uv_strerror(ret) << std::endl;
+		LOG_ERROR(7, "[satellite] Can't create listen address: " + std::string(uv_strerror(ret)));
 		return 1;
 	}
 
 	ret = uv_tcp_bind(&this->server, (const sockaddr*) &listen_addr, 0);
 
 	if (ret) {
-		std::cout << "[satellite] can't bind to socket: "
-		          << uv_strerror(ret) << std::endl;
+		LOG_ERROR(8, "[satellite] Can't bind to socket: " + std::string(uv_strerror(ret)));
 		return 1;
 	}
 
@@ -56,12 +54,11 @@ int TCPServer::listen(int port) {
 		[] (uv_stream_t *server, int status) {
 
 			if (status < 0) {
-				std::cout << "[satellite] new connection error: "
-				          << uv_strerror(status) << std::endl;
+				LOG_ERROR(9, "[satellite] New connection error: " + std::string(uv_strerror(status)));
 				return;
 			}
 
-			std::cout << "[satellite] new connection received" << std::endl;
+			LOG_INFO("[satellite] New connection received");
 
 			Satellite *this_ = (Satellite *) server->data;
 			auto client = std::make_unique<TCPClient>(this_);
@@ -78,17 +75,14 @@ int TCPServer::listen(int port) {
 						this_->remove_client(id);
 					}
 				);
-			}
-			else {
-				std::cout << "[satellite] failed to accept tcp client"
-				          << std::endl;
+			} else {
+				LOG_WARN("[satellite] Failed to accept tcp client!");
 			}
 		}
 	);
 
 	if (ret) {
-		std::cout << "[satellite] listen error: "
-		          << uv_strerror(ret) << std::endl;
+		LOG_WARN("[satellite] Listen error: " + std::string(uv_strerror(ret)));
 		return 1;
 	}
 

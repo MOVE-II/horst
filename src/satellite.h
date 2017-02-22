@@ -75,6 +75,11 @@ public:
 	Action *get_action(id_t id);
 
 	/**
+	 * Get path where to find action scripts
+	 */
+	std::string get_scripts_path();
+
+	/**
 	 * Find a procedure. If not found, return nullptr.
 	 */
 	const Procedure *get_procedure(const std::string &name) const;
