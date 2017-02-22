@@ -1,15 +1,17 @@
 #include "state.h"
 
-#include "../util.h"
+#include "../action/enter_manualmode.h"
 #include "../action/enter_safemode.h"
+#include "../action/leave_manualmode.h"
 #include "../action/leave_safemode.h"
+#include "../util.h"
 
 
 namespace horst {
 
 State::State()
 	:
-	safemode{false} {}
+	safemode{false}, manualmode{false} {}
 
 State State::copy() const {
 	return State{*this};
@@ -24,6 +26,15 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 
 	// perform the computer state transition
 	util::vector_extend(ret, this->computer.transform_to(target.computer));
+
+	/* Handle requests for entering/leaving manualmode */
+	if (target.manualmode && !this->manualmode) {
+		/* Go to manualmode */
+		ret.push_back(std::make_unique<EnterManualMode>());
+	} else if (!target.manualmode && this->manualmode) {
+		/* Leave manualmode */
+		ret.push_back(std::make_unique<LeaveManualMode>());
+	}
 
 	/* Enter safemode in emergency case */
 	if ((this->thm.all_temp == THM::overall_temp::ALARM or
@@ -40,6 +51,7 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 		/* Leave safemode */
 		ret.push_back(std::make_unique<LeaveSafeMode>());
 	}
+
 
 	return ret;
 }

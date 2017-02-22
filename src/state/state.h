@@ -49,6 +49,9 @@ public:
 	/** safe mode is active on the satellite */
 	bool safemode;
 
+	/* manual mode deactivates horst logic */
+	bool manualmode;
+
 	/** State of the power supply */
 	EPS eps;
 
