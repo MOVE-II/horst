@@ -105,6 +105,10 @@ const Procedure *Satellite::get_procedure(const std::string &name) const {
 	return this->procedures.get_procedure(name);
 }
 
+State *Satellite::get_state() {
+	return &this->current_state;
+}
+
 
 void Satellite::remove_action(id_t id) {
 	auto pos = this->actions.find(id);
