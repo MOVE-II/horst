@@ -5,13 +5,14 @@
 #include <sstream>
 
 #include "../event/safemode_signal.h"
+#include "../logger.h"
 #include "../satellite.h"
 
 
 namespace horst {
 
 EnterSafeMode::EnterSafeMode()
-    : ShellCommand("./scripts/enter_safemode.sh", nullptr) {}
+    : ShellCommand("enter_safemode.sh", nullptr) {}
 
 
 std::string EnterSafeMode::describe() const {
@@ -22,9 +23,9 @@ std::string EnterSafeMode::describe() const {
 
 
 void EnterSafeMode::perform(Satellite *sat, ac_done_cb_t done) {
-	std::cout << "Start entering safemode!" << std::endl;
+	LOG_INFO("[action] Entering safemode");
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
-		std::cout << "Safemode was entered!" << std::endl;
+		LOG_INFO("[action] Safemode was entered");
 		if (success) {
 			sat->on_event(std::make_shared<SafeModeSignal>(true));
 		} else {

@@ -5,13 +5,14 @@
 #include <sstream>
 
 #include "../event/manualmode_signal.h"
+#include "../logger.h"
 #include "../satellite.h"
 
 
 namespace horst {
 
 LeaveManualMode::LeaveManualMode()
-    : ShellCommand("./scripts/leave_manualmode.sh", nullptr) {}
+    : ShellCommand("leave_manualmode.sh", nullptr) {}
 
 
 std::string LeaveManualMode::describe() const {
@@ -22,9 +23,9 @@ std::string LeaveManualMode::describe() const {
 
 
 void LeaveManualMode::perform(Satellite *sat, ac_done_cb_t done) {
-	std::cout << "Start leaving manualmode!" << std::endl;
+	LOG_INFO("[action] Leaving manualmode");
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
-		std::cout << "Manualmode was left." << std::endl;
+		LOG_INFO("[action] Manualmode was left");
 		if (success) {
 			sat->on_event(std::make_shared<ManualModeSignal>(false));
 		} else {

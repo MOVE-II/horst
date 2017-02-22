@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <iostream>
 
+#include "../logger.h"
 #include "../state/state.h"
 
 
@@ -23,10 +24,10 @@ bool DebugStuff::is_fact() const {
 void DebugStuff::update(State &state) {
 
 	if (this->what_do == "bat") {
-		std::cout << "forcing battery level" << std::endl;
+		LOG_INFO("Forcing battery level");
 		state.eps.battery_level = 15;
 	} else {
-		std::cout << "dunno what to do: " << this->what_do << std::endl;
+		LOG_INFO("Unknown debug command: " + std::string(this->what_do));
 	}
 }
 

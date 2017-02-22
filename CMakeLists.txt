@@ -47,7 +47,6 @@ add_executable(horst
 	src/event/safemode_signal.cpp
 	src/event/thm_signal.cpp
 	src/horst.cpp
-	src/log.cpp
 	src/procedure/instruction/halt.cpp
 	src/procedure/instruction/instruction.cpp
 	src/procedure/instruction/loadc.cpp
@@ -68,6 +67,7 @@ add_executable(horst
 	src/state/state_component.cpp
 	src/state/thm.cpp
 	src/util.cpp
+	${version_file}
 )
 
 target_link_libraries(horst
