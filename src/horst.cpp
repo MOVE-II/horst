@@ -50,13 +50,10 @@ arguments parse_args(int argc, char **argv) {
 			{"help",    no_argument,       0, 'h'},
 			{"port",    required_argument, 0, 'p'},
 			{"scripts", required_argument, 0, 's'},
-			{"quiet",   no_argument,       0, 'q'},
-			{"verbose", no_argument,       0, 'v'},
 			{0,         0,                 0,  0 }
 		};
 
-		c = getopt_long(argc, argv, "hp:qv",
-		                long_options, &option_index);
+		c = getopt_long(argc, argv, "hp:qvs:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -65,14 +62,6 @@ arguments parse_args(int argc, char **argv) {
 			// get long_options[option_index].name
 			// if (optarg)
 			// printf(" with arg %s", optarg);
-			break;
-
-		case 'v':
-			args.verbose = true;
-			break;
-
-		case 'q':
-			args.verbose = false;
 			break;
 
 		case 'p':
