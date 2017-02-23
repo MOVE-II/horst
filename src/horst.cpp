@@ -35,7 +35,7 @@ void show_help(const char *progname) {
 	std::cout << "horst\n"
 	          << "MOVE-II satellite manager\n"
 	          << "\n"
-	          << "usage: " << progname << "[-v] [-q] [-h|--help] [-p|--port=LISTENPORT]\n"
+	          << "usage: " << progname << "[-h|--help] [-p|--port=LISTENPORT]\n"
 	          << std::endl;
 }
 
@@ -53,7 +53,7 @@ arguments parse_args(int argc, char **argv) {
 			{0,         0,                 0,  0 }
 		};
 
-		c = getopt_long(argc, argv, "hp:qvs:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hp:s:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -78,15 +78,15 @@ arguments parse_args(int argc, char **argv) {
 			break;
 
 		case '?':
-			break;
+			LOG_WARN("Something is wrong with the parameters!");
+			show_help(argv[0]);
+			exit(1);
 
 		default:
 			LOG_WARN("Invalid parameter " + std::to_string(c));
+			show_help(argv[0]);
+			exit(1);
 		}
-	}
-
-	if (optind < argc) {
-		// we have arguments left at argv[optind] etc
 	}
 
 	return args;
