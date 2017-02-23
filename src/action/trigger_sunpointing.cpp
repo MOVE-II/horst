@@ -6,6 +6,9 @@
 
 #include "../logger.h"
 #include "../satellite.h"
+#include "../state/adcs.h"
+#include "../event/adcs_signal.h"
+#include "../event/adcs_req_signal.h"
 
 
 namespace horst {
@@ -25,10 +28,10 @@ void TriggerSunpointing::perform(Satellite *sat, ac_done_cb_t done) {
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
 		if (success) {
 			LOG_INFO("[action] Sunpointing has been triggered");
-			// TODO: Create adcs state change signal for sunpointing requested
-			//sat->on_event(std::make_shared<ADCSSignal>(sth));
+			// Create adcs state change signal for sunpointing requested
+			sat->on_event(std::make_shared<ADCSreqSignal>(ADCS::adcs_state::SUN));
 		} else {
-			// Just ignore, pl daemon will ask again soon
+			// reschedule a retry ?
 		}
 		done(success, action);
 	});

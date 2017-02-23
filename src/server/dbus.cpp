@@ -5,6 +5,8 @@
 #include "../event/debugstuff.h"
 #include "../event/eps_signal.h"
 #include "../event/leop_signal.h"
+#include "../event/adcs_signal.h"
+#include "../event/adcs_req_signal.h"
 #include "../event/manualmode_req.h"
 #include "../event/payload_req.h"
 #include "../event/payload_signal.h"
@@ -474,8 +476,9 @@ void DBusConnection::watch_for_signals() {
 		this
 	);
 	if (r < 0) {
-		LOG_ERROR(6, "[dbus] Failed to add leop state change match: " + std::string(strerror(-r)));
+		LOG_ERROR(6, "[dbus] Failed to add LEOP state change match: " + std::string(strerror(-r)));
 	}
+
 
 	r = sd_bus_add_match(
 		this->bus,
@@ -519,6 +522,41 @@ void DBusConnection::watch_for_signals() {
 	);
 	if (r < 0) {
 		LOG_ERROR(6, "[dbus] Failed to add payload conditions fulfilled match: " + std::string(strerror(-r)));
+
+	}
+	
+
+	r = sd_bus_add_match(
+		this->bus,
+		nullptr,
+		"type='signal',"
+		"sender='moveii.adcs',"
+		"member='adcsStateChange'",
+		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
+			DBusConnection *this_ = (DBusConnection *) userdata;
+			ADCS::adcs_state adcs_status;
+			int r;
+
+			r = sd_bus_message_read(m, "y", &adcs_status);
+			if (r < 0) {
+				LOG_WARN("[dbus] Failed to receive ADCS state change: " + std::string(strerror(-r)));
+				return 0;
+			}
+			LOG_INFO("[dbus] ADCS state changed to: " + std::to_string((int)adcs_status));
+
+			/* Generate fact and send it to state logic */
+			auto sig = std::make_shared<ADCSSignal>(static_cast<ADCS::adcs_state>(adcs_status));
+
+			this_->get_sat()->on_event(std::move(sig));
+
+			return 0;
+		},
+		this
+	);
+	if (r < 0) {
+
+	        LOG_ERROR(6, "[dbus] Failed to add ADCS state change match: " + std::string(strerror(-r)));
+
 	}
 }
 
