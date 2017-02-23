@@ -5,9 +5,11 @@
 #include <vector>
 
 #include "../action/action.h"
+#include "adcs.h"
 #include "com.h"
 #include "computer.h"
 #include "eps.h"
+#include "payload.h"
 #include "thm.h"
 
 
@@ -67,6 +69,12 @@ public:
 
 	/** State of the thermal subsystem */
 	THM thm;
+
+	/** State of the payload subsystem */
+	Payload pl;
+
+	/** State of the ADCS subsystem */
+	ADCS adcs;
 };
 
 } // horst
