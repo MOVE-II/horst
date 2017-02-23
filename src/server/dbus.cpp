@@ -332,25 +332,6 @@ sd_bus *DBusConnection::get_bus() {
 }
 
 
-void DBusConnection::emit_action_done(bool success, id_t action) {
-	int r = sd_bus_emit_signal(
-		this->bus,
-		"/moveii/horst",
-		"moveii.horst",
-		"actionDone",
-		"bt",
-		success,
-		action
-	);
-	if (r < 0) {
-		LOG_WARN("[dbus] Failed to emit action_done: : " + std::string(strerror(-r)));
-	}
-
-	// the signal can be sent out
-	this->update_events();
-}
-
-
 void DBusConnection::watch_for_signals() {
 	int r;
 
@@ -498,18 +479,20 @@ void DBusConnection::watch_for_signals() {
 		nullptr,
 		"type='signal',"
 		"sender='moveii.adcs',"
-		"member='adcsStateChange'",
+		"member='adcsStateReached'",
 		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
+			char* adcs_status_string;
 			ADCS::adcs_state adcs_status;
 			int r;
 
-			r = sd_bus_message_read(m, "y", &adcs_status);
+			r = sd_bus_message_read(m, "s", &adcs_status_string);
 			if (r < 0) {
 				LOG_WARN("[dbus] Failed to receive ADCS state change: " + std::string(strerror(-r)));
 				return 0;
 			}
-			LOG_INFO("[dbus] ADCS state changed to: " + std::to_string((int)adcs_status));
+			// TODO: map adcs mode string to state enum or make the enum in ADCS object a string instead
+			LOG_INFO("[dbus] ADCS state changed to: " + std::to_string(*adcs_status_string));
 
 			/* Generate fact and send it to state logic */
 			auto sig = std::make_shared<ADCSSignal>(static_cast<ADCS::adcs_state>(adcs_status));
