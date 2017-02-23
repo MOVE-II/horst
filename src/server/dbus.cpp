@@ -332,25 +332,6 @@ sd_bus *DBusConnection::get_bus() {
 }
 
 
-void DBusConnection::emit_action_done(bool success, id_t action) {
-	int r = sd_bus_emit_signal(
-		this->bus,
-		"/moveii/horst",
-		"moveii.horst",
-		"actionDone",
-		"bt",
-		success,
-		action
-	);
-	if (r < 0) {
-		LOG_WARN("[dbus] Failed to emit action_done: : " + std::string(strerror(-r)));
-	}
-
-	// the signal can be sent out
-	this->update_events();
-}
-
-
 void DBusConnection::watch_for_signals() {
 	int r;
 
