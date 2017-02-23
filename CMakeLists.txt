@@ -38,7 +38,6 @@ add_executable(horst
 	src/event/debugstuff.cpp
 	src/event/eps_signal.cpp
 	src/event/event.cpp
-	src/event/leop_signal.cpp
 	src/event/manualmode_req.cpp
 	src/event/manualmode_signal.cpp
 	src/event/leop_signal.cpp
