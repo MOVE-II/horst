@@ -28,7 +28,6 @@ void EnterManualMode::perform(Satellite *sat, ac_done_cb_t done) {
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
 		if (success) {
 			LOG_INFO("[action] Manualmode was automatically left again");
-			sat->on_event(std::make_shared<ManualModeSignal>(true));
 		}
 		done(success, action);
 	});
