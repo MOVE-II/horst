@@ -251,8 +251,7 @@ static const sd_bus_vtable horst_vtable[] = {
 
 
 int DBusConnection::connect() {
-	// open bus: system or user
-	int r = sd_bus_open_user(&this->bus);
+	int r = sd_bus_open_system(&this->bus);
 
 	if (r < 0) {
 		LOG_ERROR(4, "[dbus] Failed to connect to bus: " + std::string(strerror(-r)));
