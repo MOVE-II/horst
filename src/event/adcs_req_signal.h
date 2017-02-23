@@ -13,10 +13,10 @@ namespace horst {
 /**
  * Emitted when the ADCS state changes
  */
-class ADCSSignal : public Event {
+class ADCSreqSignal : public Event {
 public:
-	ADCSSignal(ADCS::adcs_state adcs_status);
-	virtual ~ADCSSignal() = default;
+	ADCSreqSignal(ADCS::adcs_state adcs_status);
+	virtual ~ADCSreqSignal() = default;
 
 	bool is_fact() const override;
 

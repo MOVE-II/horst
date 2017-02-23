@@ -492,7 +492,7 @@ void DBusConnection::watch_for_signals() {
 				std::cout << "[dbus] Failed to receive ADCS state change!" << std::endl;
 				return 0;
 			}
-			std::cout << "[dbus] LEOP state changed to " << (int) adcs_status << std::endl;
+			std::cout << "[dbus] ADCS state changed to " << (int) adcs_status << std::endl;
 
 			/* Generate fact and send it to state logic */
 			auto sig = std::make_shared<ADCSSignal>(static_cast<ADCS::adcs_state>(adcs_status));
@@ -503,7 +503,7 @@ void DBusConnection::watch_for_signals() {
 		this
 	);
 	if (r < 0) {
-		std::cout << "Failed to add ADCS state change match" << std::endl;
+	        LOG_ERROR(6, "[dbus] Failed to add ADCS state change match: " + std::string(strerror(-r)));
 	}
 }
 

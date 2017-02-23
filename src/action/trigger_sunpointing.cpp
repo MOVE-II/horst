@@ -28,7 +28,7 @@ void TriggerSunpointing::perform(Satellite *sat, ac_done_cb_t done) {
 		if (success) {
 			LOG_INFO("[action] Sunpointing has been triggered");
 			// TODO: Create adcs state change signal for sunpointing requested
-			sat->on_event(std::make_shared<ADCSSignal>(ADCS::adcs_state::SUN));
+			sat->on_event(std::make_shared<ADCSreqSignal>(ADCS::adcs_state::SUN));
 		} else {
 			// reschedule a retry ?
 		}
