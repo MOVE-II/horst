@@ -2,7 +2,6 @@
 
 #include <iostream>
 
-#include "../event/debugstuff.h"
 #include "../event/eps_signal.h"
 #include "../event/leop_signal.h"
 #include "../event/adcs_signal.h"
@@ -144,26 +143,6 @@ static int dbus_run(sd_bus_message *m,
 	return sd_bus_reply_method_return(m, "x", 0);
 }
 
-
-static int dbus_set(sd_bus_message *m,
-                    void *userdata,
-                    sd_bus_error * /*ret_error*/) {
-
-	DBusConnection *this_ = (DBusConnection *)userdata;
-	const char *name;
-	int r = sd_bus_message_read(m, "s", &name);
-	if (r < 0) {
-		LOG_ERROR(3, "[dbus] set() failed to parse parameters: " + std::string(strerror(-r)));
-		return r;
-	}
-
-	LOG_INFO("[dbus] Request to set " + std::string(name));
-	auto req = std::make_shared<DebugStuff>(name);
-	this_->get_sat()->on_event(std::move(req));
-
-	return sd_bus_reply_method_return(m, "x", 0);
-}
-
 static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	DBusConnection *this_ = (DBusConnection *)userdata;
 	bool safemode;
@@ -238,18 +217,30 @@ static int dbus_manualmode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	return sd_bus_reply_method_return(m, "b", true);
 }
 
+static int
+checkDaemon(sd_bus_message *m, void*, sd_bus_error*) {
+    LOG_DEBUG("Daemons checkDaemon is called");
+    return sd_bus_reply_method_return(m, "q", 0);
+}
+
+static int
+checkHardware(sd_bus_message *m, void*, sd_bus_error*) {
+    LOG_DEBUG("Daemons checkHardware is called");
+    return sd_bus_reply_method_return(m, "q", 0);
+}
+
 static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_VTABLE_START(0),
 	SD_BUS_METHOD("run", "s", "x", dbus_run, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("exec", "s", "x", dbus_exec, SD_BUS_VTABLE_UNPRIVILEGED),
-	// debugging function: remove it!
-	SD_BUS_METHOD("set", "s", "x", dbus_set, SD_BUS_VTABLE_UNPRIVILEGED),
 	// b as input does not work. Reading it from the message seems to
 	// destroy the userdata pointer (systemd bug?). Using y instead...
 	SD_BUS_METHOD("safemode", "y", "b", dbus_safemode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("manualmode", "y", "b", dbus_manualmode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_SIGNAL("actionDone", "bt", 0),
 	SD_BUS_METHOD("getBeaconData", "", "ay", getBeaconData, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("checkDaemon", "", "q", checkDaemon, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("checkHardware", "", "q", checkHardware, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_VTABLE_END
 };
 
