@@ -197,10 +197,10 @@ static int getBeaconData(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	data.push_back((uint8_t) (state->eps.battery_level >> 8));
 	data.push_back((uint8_t) (state->eps.battery_level & 0xFF));
 	data.push_back((uint8_t) state->thm.all_temp);
-	data.push_back((uint8_t) 0); // TODO: Insert ADCS pointing
-	data.push_back((uint8_t) 0); // TODO: Insert ADCS pointing requested
-	data.push_back((uint8_t) 0); // TODO: Insert Payload
-	data.push_back((uint8_t) 0); // TODO: Insert LEOP
+	data.push_back((uint8_t) state->adcs.pointing);
+	data.push_back((uint8_t) state->adcs.requested);
+	data.push_back((uint8_t) state->pl.daemon);
+	data.push_back((uint8_t) state->leop);
 
 	// Append data to message
 	r = sd_bus_message_append_array(retm, 'y', &data[0], data.size());

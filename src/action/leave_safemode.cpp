@@ -24,14 +24,9 @@ std::string LeaveSafeMode::describe() const {
 
 void LeaveSafeMode::perform(Satellite *sat, ac_done_cb_t done) {
 	LOG_INFO("Leaving safemode");
+	sat->on_event(std::make_shared<SafeModeSignal>(false));
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
 		LOG_INFO("Safemode was left");
-		if (success) {
-			sat->on_event(std::make_shared<SafeModeSignal>(false));
-		} else {
-			// TODO: We should do sth. here. Maybe resetting
-			// requested state, if we have one
-		}
 		done(success, action);
 	});
 }
