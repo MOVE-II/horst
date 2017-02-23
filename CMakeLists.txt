@@ -35,7 +35,6 @@ add_executable(horst
 	src/client/tcp_client.cpp
 	src/error.cpp
 	src/event/ctlmessage.cpp
-	src/event/debugstuff.cpp
 	src/event/eps_signal.cpp
 	src/event/event.cpp
 	src/event/manualmode_req.cpp
