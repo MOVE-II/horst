@@ -489,10 +489,10 @@ void DBusConnection::watch_for_signals() {
 
 			r = sd_bus_message_read(m, "y", &adcs_status);
 			if (r < 0) {
-				std::cout << "[dbus] Failed to receive ADCS state change!" << std::endl;
+				LOG_WARN("[dbus] Failed to receive ADCS state change: " + std::string(strerror(-r)));
 				return 0;
 			}
-			std::cout << "[dbus] ADCS state changed to " << (int) adcs_status << std::endl;
+			LOG_INFO("[dbus] ADCS state changed to: " + std::to_string((int)adcs_status));
 
 			/* Generate fact and send it to state logic */
 			auto sig = std::make_shared<ADCSSignal>(static_cast<ADCS::adcs_state>(adcs_status));

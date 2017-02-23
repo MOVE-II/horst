@@ -8,6 +8,7 @@
 #include "../satellite.h"
 #include "../state/adcs.h"
 #include "../event/adcs_signal.h"
+#include "../event/adcs_req_signal.h"
 
 
 namespace horst {

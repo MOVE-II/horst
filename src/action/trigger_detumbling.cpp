@@ -8,7 +8,7 @@
 #include "../satellite.h"
 #include "../state/adcs.h"
 #include "../event/adcs_signal.h"
-
+#include "../event/adcs_req_signal.h"
 
 namespace horst {
 
@@ -27,8 +27,8 @@ void TriggerDetumbling::perform(Satellite *sat, ac_done_cb_t done) {
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
 		if (success) {
 			LOG_INFO("[action] Detumbling has been triggered");
-			// TODO: Create adcs state change signal for detumbling requested
-			sat->on_event(std::make_shared<ADCSSignal>(ADCS::adcs_state::DETUMB));
+			// Create adcs state change signal for detumbling requested
+			sat->on_event(std::make_shared<ADCSreqSignal>(ADCS::adcs_state::DETUMB));
 		} else {
 			// reschedule a retry ?
 		}
