@@ -4,10 +4,17 @@
 #include "../action/enter_safemode.h"
 #include "../action/leave_manualmode.h"
 #include "../action/leave_safemode.h"
+#include "../action/trigger_sunpointing.h"
+#include "../action/trigger_detumbling.h"
+#include "../action/trigger_measuring.h"
 #include "../util.h"
 
-
 namespace horst {
+
+/**
+ * As soon as we reach an EPS battery level below that we will go into safemode
+ */
+static const uint16_t safemode_eps_treshold = 3000;
 
 State::State()
 	:
@@ -38,7 +45,7 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 
 	/* Enter safemode in emergency case */
 	if ((this->thm.all_temp == THM::overall_temp::ALARM or
-	     this->eps.battery_level < 2000) and
+	     this->eps.battery_level < safemode_eps_treshold) and
 	    this->safemode == false) {
 		ret.push_back(std::make_unique<EnterSafeMode>());
 	}
@@ -52,6 +59,48 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 		ret.push_back(std::make_unique<LeaveSafeMode>());
 	}
 
+	/**
+	 * All following rules only apply if we are neither in safemode nor in
+	 * manualmode
+	 */
+	if (!this->safemode && !this->manualmode) {
+
+		if (target.pl.daemon == Payload::daemon_state::WANTMEASURE &&
+		    this->eps.battery_level > safemode_eps_treshold &&
+		    this->thm.all_temp == THM::overall_temp::OK &&
+		    this->adcs.pointing == ADCS::adcs_state::SUN &&
+		    (this->adcs.requested == ADCS::adcs_state::SUN ||
+		    this->adcs.requested == ADCS::adcs_state::NONE) &&
+		    this->pl.daemon != Payload::daemon_state::MEASURING &&
+		    this->leop == leop_seq::DONE) {
+			/* Start measuring */
+			ret.push_back(std::make_unique<TriggerMeasuring>());
+		}
+
+		if (this->adcs.pointing != ADCS::adcs_state::SUN &&
+		    this->adcs.pointing != ADCS::adcs_state::DETUMB &&
+		    this->adcs.requested != ADCS::adcs_state::SUN &&
+		    this->adcs.requested != ADCS::adcs_state::DETUMB &&
+		    this->leop != leop_seq::UNDEPLOYED) {
+			/* Start detumbling */
+			ret.push_back(std::make_unique<TriggerMeasuring>());
+		}
+
+		if (this->adcs.pointing == ADCS::adcs_state::DETUMB &&
+		    this->leop != leop_seq::UNDEPLOYED) {
+			/* After detumbling always trigger sunpointing */
+			ret.push_back(std::make_unique<TriggerSunpointing>());
+		}
+
+		if (this->eps.battery_level > safemode_eps_treshold &&
+		    this->thm.all_temp == THM::overall_temp::OK &&
+		    this->adcs.pointing == ADCS::adcs_state::SUN &&
+		    this->pl.daemon == Payload::daemon_state::WANTMEASURE &&
+		    this->leop == leop_seq::DONE) {
+			/* Start measuring */
+			ret.push_back(std::make_unique<TriggerMeasuring>());
+		}
+	}
 
 	return ret;
 }

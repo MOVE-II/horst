@@ -5,13 +5,14 @@
 #include <sstream>
 
 #include "../event/safemode_signal.h"
+#include "../logger.h"
 #include "../satellite.h"
 
 
 namespace horst {
 
 LeaveSafeMode::LeaveSafeMode()
-    : ShellCommand("./scripts/leave_safemode.sh", nullptr) {}
+    : ShellCommand("leave_safemode.sh", nullptr) {}
 
 
 std::string LeaveSafeMode::describe() const {
@@ -22,15 +23,10 @@ std::string LeaveSafeMode::describe() const {
 
 
 void LeaveSafeMode::perform(Satellite *sat, ac_done_cb_t done) {
-	std::cout << "Start leaving safemode!" << std::endl;
+	LOG_INFO("Leaving safemode");
+	sat->on_event(std::make_shared<SafeModeSignal>(false));
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
-		std::cout << "Safemode was left." << std::endl;
-		if (success) {
-			sat->on_event(std::make_shared<SafeModeSignal>(false));
-		} else {
-			// TODO: We should do sth. here. Maybe resetting
-			// requested state, if we have one
-		}
+		LOG_INFO("Safemode was left");
 		done(success, action);
 	});
 }

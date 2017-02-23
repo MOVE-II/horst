@@ -4,13 +4,15 @@
 #include <memory>
 #include <sstream>
 
+#include "../logger.h"
 #include "../satellite.h"
+#include "../event/adcs_req_signal.h"
 
 
 namespace horst {
 
 TriggerDetumbling::TriggerDetumbling()
-    : ShellCommand("./scripts/trigger_detumbling.sh", nullptr) {}
+    : ShellCommand("trigger_detumbling.sh", nullptr) {}
 
 
 std::string TriggerDetumbling::describe() const {
@@ -23,11 +25,11 @@ std::string TriggerDetumbling::describe() const {
 void TriggerDetumbling::perform(Satellite *sat, ac_done_cb_t done) {
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
 		if (success) {
-			std::cout << "Detumbling has been triggered." << std::endl;
-			// TODO: Create adcs state change signal for detumbling requested
-			//sat->on_event(std::make_shared<ADCSSignal>(sth));
+			LOG_INFO("[action] Detumbling has been triggered");
+			// Create adcs state change signal for detumbling requested
+			sat->on_event(std::make_shared<ADCSreqSignal>(ADCS::adcs_state::DETUMB));
 		} else {
-			// Just ignore, pl daemon will ask again soon
+			// reschedule a retry ?
 		}
 		done(success, action);
 	});

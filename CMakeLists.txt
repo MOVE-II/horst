@@ -35,11 +35,15 @@ add_executable(horst
 	src/client/tcp_client.cpp
 	src/error.cpp
 	src/event/ctlmessage.cpp
-	src/event/debugstuff.cpp
 	src/event/eps_signal.cpp
 	src/event/event.cpp
 	src/event/manualmode_req.cpp
 	src/event/manualmode_signal.cpp
+	src/event/leop_signal.cpp
+	src/event/adcs_signal.cpp
+	src/event/adcs_req_signal.cpp
+	src/event/payload_req.cpp
+	src/event/payload_signal.cpp
 	src/event/req_daemon_control.cpp
 	src/event/req_procedure_call.cpp
 	src/event/req_shell_command.cpp
@@ -47,7 +51,6 @@ add_executable(horst
 	src/event/safemode_signal.cpp
 	src/event/thm_signal.cpp
 	src/horst.cpp
-	src/log.cpp
 	src/procedure/instruction/halt.cpp
 	src/procedure/instruction/instruction.cpp
 	src/procedure/instruction/loadc.cpp
@@ -61,13 +64,16 @@ add_executable(horst
 	src/server/dbus.cpp
 	src/server/s3tp.cpp
 	src/server/tcp.cpp
+	src/state/adcs.cpp
 	src/state/com.cpp
 	src/state/computer.cpp
 	src/state/eps.cpp
+	src/state/payload.cpp
 	src/state/state.cpp
 	src/state/state_component.cpp
 	src/state/thm.cpp
 	src/util.cpp
+	${version_file}
 )
 
 target_link_libraries(horst

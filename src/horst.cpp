@@ -7,9 +7,14 @@
 #include <string>
 
 #include "error.h"
-#include "log.h"
+#include "logger.h"
 #include "satellite.h"
-#include "../version/version.cpp.in"
+
+/**
+ * Logger settings
+ */
+const bool TIMESTAMP_ENABLED = false;
+const std::string SUB_COMPONENT = "HORST";
 
 /**
  * Contains all components of horst, the move-II state controller.
@@ -30,7 +35,7 @@ void show_help(const char *progname) {
 	std::cout << "horst\n"
 	          << "MOVE-II satellite manager\n"
 	          << "\n"
-	          << "usage: " << progname << "[-v] [-q] [-h|--help] [-p|--port=LISTENPORT]\n"
+	          << "usage: " << progname << "[-h|--help] [-p|--port=LISTENPORT]\n"
 	          << std::endl;
 }
 
@@ -44,13 +49,11 @@ arguments parse_args(int argc, char **argv) {
 		static struct option long_options[] = {
 			{"help",    no_argument,       0, 'h'},
 			{"port",    required_argument, 0, 'p'},
-			{"quiet",   no_argument,       0, 'q'},
-			{"verbose", no_argument,       0, 'v'},
+			{"scripts", required_argument, 0, 's'},
 			{0,         0,                 0,  0 }
 		};
 
-		c = getopt_long(argc, argv, "hp:qv",
-		                long_options, &option_index);
+		c = getopt_long(argc, argv, "hp:s:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -61,16 +64,12 @@ arguments parse_args(int argc, char **argv) {
 			// printf(" with arg %s", optarg);
 			break;
 
-		case 'v':
-			args.verbose = true;
-			break;
-
-		case 'q':
-			args.verbose = false;
-			break;
-
 		case 'p':
 			args.port = std::stoi(optarg);
+			break;
+
+		case 's':
+			args.scripts = optarg;
 			break;
 
 		case 'h':
@@ -79,15 +78,15 @@ arguments parse_args(int argc, char **argv) {
 			break;
 
 		case '?':
-			break;
+			LOG_WARN("Something is wrong with the parameters!");
+			show_help(argv[0]);
+			exit(1);
 
 		default:
-			printf("?? getopt returned character code 0%o ??\n", c);
+			LOG_WARN("Invalid parameter " + std::to_string(c));
+			show_help(argv[0]);
+			exit(1);
 		}
-	}
-
-	if (optind < argc) {
-		// we have arguments left at argv[optind] etc
 	}
 
 	return args;
@@ -95,25 +94,21 @@ arguments parse_args(int argc, char **argv) {
 
 
 int run(int argc, char **argv) {
+	LOG_INFO("Starting Horst " + std::string(VERSION));
 	try {
 		// set the global args
 		args = parse_args(argc, argv);
-
-		std::cout << "Starting Horst " << VERSION << std::endl;
 
 		Satellite move2{args};
 
 		return move2.run();
 	}
 	catch (Error &error) {
-		std::cout << "### Horst internal error ###" << std::endl;
-		std::cout << error.what() << std::endl;
-		std::cout << error << std::endl;
+		LOG_CRITICAL(1, std::string("Internal error! " + std::string(error.what())));
 		return 1;
 	}
 	catch (std::exception &error) {
-		std::cout << "### Fatal C++ error ###" << std::endl;
-		std::cout << error.what() << std::endl;
+		LOG_CRITICAL(2, std::string("Fatal C++ error! " + std::string(error.what())));
 		return 2;
 	}
 }

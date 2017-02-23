@@ -4,26 +4,25 @@
 #include <memory>
 #include <string>
 
+#include "../state/state.h"
 #include "event.h"
 
 
 namespace horst {
 
 /**
- * Emitted when the safe mode was entered successfully.
+ * Emitted when the LEOP state changes
  */
-class DebugStuff : public Event {
+class LEOPSignal : public Event {
 public:
-	DebugStuff(const std::string &what_do);
-	virtual ~DebugStuff() = default;
+	LEOPSignal(State::leop_seq leop);
+	virtual ~LEOPSignal() = default;
 
 	bool is_fact() const override;
 
 	void update(State &state) override;
-
 protected:
-	bool fact;
-	std::string what_do;
+	State::leop_seq leop;
 };
 
 } // horst

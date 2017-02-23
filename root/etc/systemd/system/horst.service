@@ -1,0 +1,12 @@
+[Unit]
+Description=HORST
+After=dbus.service s3tp.service eps.service adcs.service pl.service thermal.service
+
+[Service]
+Type=dbus
+User=misc
+BusName=moveii.horst
+ExecStart=/opt/cdh_horst/horst
+
+[Install]
+WantedBy=MOVEII.target

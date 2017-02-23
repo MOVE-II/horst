@@ -7,6 +7,7 @@
 #include <unistd.h>
 
 #include "../event/ctlmessage.h"
+#include "../logger.h"
 #include "../satellite.h"
 
 
@@ -22,8 +23,7 @@ Client::Client(Satellite *satellite, close_cb_t on_close)
 
 void Client::data_received(const char *data, size_t size) {
 	if (this->buf_used + size >= this->max_buf_size) {
-		std::cout << "[client] receive buffer too full, closing..."
-		          << std::endl;
+		LOG_WARN("[client] Receive buffer too full, closing...");
 		this->close();
 		return;
 	}

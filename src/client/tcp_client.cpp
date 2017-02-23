@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "../logger.h"
 #include "../satellite.h"
 
 
@@ -105,8 +106,7 @@ void TCPClient::send(const char *buf, size_t len) {
 		req, this->get_stream(), &uvbuf, 1,
 		[] (uv_write_t *req, int status) {
 			if (status != 0) {
-				std::cout << "failed to send: "
-				          << uv_strerror(status) << std::endl;
+				LOG_WARN("[satellite] Failed to send on tcp: " + std::string(uv_strerror(status)));
 			}
 
 			// this is probably a very dirty hack.
@@ -122,9 +122,9 @@ void TCPClient::send(const char *buf, size_t len) {
 
 void TCPClient::connection_lost(int code) {
 	if (code == UV_EOF) {
-		std::cout << "[client] tcp connection closed" << std::endl;
+		LOG_INFO("[client] TCP connection closed");
 	} else {
-		std::cout << "[client] tcp connection lost: " << code << std::endl;
+		LOG_INFO("[client] TCP connection lost");
 	}
 
 	this->close();

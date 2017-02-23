@@ -5,9 +5,11 @@
 #include <vector>
 
 #include "../action/action.h"
+#include "adcs.h"
 #include "com.h"
 #include "computer.h"
 #include "eps.h"
+#include "payload.h"
 #include "thm.h"
 
 
@@ -52,6 +54,13 @@ public:
 	/* manual mode deactivates horst logic */
 	bool manualmode;
 
+	/** The leop sequence we are in */
+	enum class leop_seq {
+		UNDEPLOYED,
+		DEPLOYED,
+		DONE
+	} leop;
+
 	/** State of the power supply */
 	EPS eps;
 
@@ -60,6 +69,12 @@ public:
 
 	/** State of the thermal subsystem */
 	THM thm;
+
+	/** State of the payload subsystem */
+	Payload pl;
+
+	/** State of the ADCS subsystem */
+	ADCS adcs;
 };
 
 } // horst
