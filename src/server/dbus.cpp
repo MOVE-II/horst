@@ -8,6 +8,8 @@
 #include "../event/adcs_signal.h"
 #include "../event/adcs_req_signal.h"
 #include "../event/manualmode_req.h"
+#include "../event/payload_req.h"
+#include "../event/payload_signal.h"
 #include "../event/req_procedure_call.h"
 #include "../event/req_shell_command.h"
 #include "../event/safemode_req.h"
@@ -197,10 +199,10 @@ static int getBeaconData(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	data.push_back((uint8_t) (state->eps.battery_level >> 8));
 	data.push_back((uint8_t) (state->eps.battery_level & 0xFF));
 	data.push_back((uint8_t) state->thm.all_temp);
-	data.push_back((uint8_t) 0); // TODO: Insert ADCS pointing
-	data.push_back((uint8_t) 0); // TODO: Insert ADCS pointing requested
-	data.push_back((uint8_t) 0); // TODO: Insert Payload
-	data.push_back((uint8_t) 0); // TODO: Insert LEOP
+	data.push_back((uint8_t) state->adcs.pointing);
+	data.push_back((uint8_t) state->adcs.requested);
+	data.push_back((uint8_t) state->pl.daemon);
+	data.push_back((uint8_t) state->leop);
 
 	// Append data to message
 	r = sd_bus_message_append_array(retm, 'y', &data[0], data.size());
@@ -460,10 +462,10 @@ void DBusConnection::watch_for_signals() {
 
 			r = sd_bus_message_read(m, "y", &leop);
 			if (r < 0) {
-				std::cout << "[dbus] Failed to receive LEOP state change!" << std::endl;
+				LOG_WARN("[dbus] Failed to receive LEOP state change: " + std::string(strerror(-r)));
 				return 0;
 			}
-			std::cout << "[dbus] LEOP state changed to " << (int) leop << std::endl;
+			LOG_INFO("[dbus] LEOP state changed to: " + std::to_string(leop));
 
 			/* Generate fact and send it to state logic */
 			auto sig = std::make_shared<LEOPSignal>(static_cast<State::leop_seq>(leop));
@@ -474,9 +476,56 @@ void DBusConnection::watch_for_signals() {
 		this
 	);
 	if (r < 0) {
-		std::cout << "Failed to add LEOP state change match" << std::endl;
+		LOG_ERROR(6, "[dbus] Failed to add LEOP state change match: " + std::string(strerror(-r)));
+	}
+
+
+	r = sd_bus_add_match(
+		this->bus,
+		nullptr,
+		"type='signal',"
+		"sender='moveii.pl',"
+		"member='pl_measurement_over'",
+		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
+			DBusConnection *this_ = (DBusConnection *) userdata;
+			LOG_INFO("[dbus] Payload measurement is done");
+
+			/* Generate fact and send it to state logic */
+			auto sig = std::make_shared<PayloadSignal>(Payload::daemon_state::IDLE);
+			this_->get_sat()->on_event(std::move(sig));
+
+			return 0;
+		},
+		this
+	);
+	if (r < 0) {
+		LOG_ERROR(6, "[dbus] Failed to add payload measurement done match: " + std::string(strerror(-r)));
+	}
+
+	r = sd_bus_add_match(
+		this->bus,
+		nullptr,
+		"type='signal',"
+		"sender='moveii.pl',"
+		"member='pl_conditions_fulfilled'",
+		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
+			DBusConnection *this_ = (DBusConnection *) userdata;
+			LOG_INFO("[dbus] Payload wants to measure");
+
+			/* Generate fact and send it to state logic */
+			auto sig = std::make_shared<PayloadReq>(Payload::daemon_state::WANTMEASURE);
+			this_->get_sat()->on_event(std::move(sig));
+
+			return 0;
+		},
+		this
+	);
+	if (r < 0) {
+		LOG_ERROR(6, "[dbus] Failed to add payload conditions fulfilled match: " + std::string(strerror(-r)));
+
 	}
 	
+
 	r = sd_bus_add_match(
 		this->bus,
 		nullptr,
@@ -497,6 +546,7 @@ void DBusConnection::watch_for_signals() {
 
 			/* Generate fact and send it to state logic */
 			auto sig = std::make_shared<ADCSSignal>(static_cast<ADCS::adcs_state>(adcs_status));
+
 			this_->get_sat()->on_event(std::move(sig));
 
 			return 0;
@@ -504,7 +554,9 @@ void DBusConnection::watch_for_signals() {
 		this
 	);
 	if (r < 0) {
+
 	        LOG_ERROR(6, "[dbus] Failed to add ADCS state change match: " + std::string(strerror(-r)));
+
 	}
 }
 

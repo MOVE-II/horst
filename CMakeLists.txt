@@ -38,11 +38,14 @@ add_executable(horst
 	src/event/debugstuff.cpp
 	src/event/eps_signal.cpp
 	src/event/event.cpp
+	src/event/leop_signal.cpp
 	src/event/manualmode_req.cpp
 	src/event/manualmode_signal.cpp
 	src/event/leop_signal.cpp
 	src/event/adcs_signal.cpp
 	src/event/adcs_req_signal.cpp
+	src/event/payload_req.cpp
+	src/event/payload_signal.cpp
 	src/event/req_daemon_control.cpp
 	src/event/req_procedure_call.cpp
 	src/event/req_shell_command.cpp

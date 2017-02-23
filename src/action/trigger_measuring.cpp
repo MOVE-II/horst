@@ -6,6 +6,8 @@
 
 #include "../logger.h"
 #include "../satellite.h"
+#include "../state/payload.h"
+#include "../event/payload_signal.h"
 
 
 namespace horst {
@@ -25,8 +27,7 @@ void TriggerMeasuring::perform(Satellite *sat, ac_done_cb_t done) {
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
 		if (success) {
 			LOG_INFO("[action] Measuring has been triggered");
-			// TODO: Create pl state change signal for measuring
-			//sat->on_event(std::make_shared<PayloadSignal>(sth));
+			sat->on_event(std::make_shared<PayloadSignal>(Payload::daemon_state::MEASURING));
 		} else {
 			// Just ignore, pl daemon will ask again soon
 		}
