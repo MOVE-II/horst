@@ -361,33 +361,10 @@ void DBusConnection::emit_action_done(bool success, id_t action) {
 
 
 void DBusConnection::watch_for_signals() {
+	int r;
 
 	// set up watched signals
 	// https://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-routing-match-rules
-
-	int r = sd_bus_add_match(
-		this->bus,
-		nullptr,
-		"type='signal',"
-		"sender='moveii.pl',"
-		"member='payloadMeasurementDone'",
-		[] (sd_bus_message * /*m*/,
-		    void * /*userdata*/,
-		    sd_bus_error * /*ret_error*/) -> int {
-
-			// DBusConnection *this_ = (DBusConnection *) userdata;
-
-			LOG_INFO("[dbus] Payload measurement done");
-
-			// TODO: mark the done in the state table
-
-			return 0;
-		},
-		this
-	);
-	if (r < 0) {
-		LOG_ERROR(6, "[dbus] Failed to add payload done match: " + std::string(strerror(-r)));
-	}
 
 	r = sd_bus_add_match(
 		this->bus,
@@ -486,7 +463,7 @@ void DBusConnection::watch_for_signals() {
 		"type='signal',"
 		"sender='moveii.pl',"
 		"member='pl_measurement_over'",
-		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
+		[] (sd_bus_message*, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
 			LOG_INFO("[dbus] Payload measurement is done");
 
@@ -508,7 +485,7 @@ void DBusConnection::watch_for_signals() {
 		"type='signal',"
 		"sender='moveii.pl',"
 		"member='pl_conditions_fulfilled'",
-		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
+		[] (sd_bus_message*, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
 			LOG_INFO("[dbus] Payload wants to measure");
 
@@ -524,7 +501,6 @@ void DBusConnection::watch_for_signals() {
 		LOG_ERROR(6, "[dbus] Failed to add payload conditions fulfilled match: " + std::string(strerror(-r)));
 
 	}
-	
 
 	r = sd_bus_add_match(
 		this->bus,
@@ -554,9 +530,7 @@ void DBusConnection::watch_for_signals() {
 		this
 	);
 	if (r < 0) {
-
-	        LOG_ERROR(6, "[dbus] Failed to add ADCS state change match: " + std::string(strerror(-r)));
-
+		LOG_ERROR(6, "[dbus] Failed to add ADCS state change match: " + std::string(strerror(-r)));
 	}
 }
 
