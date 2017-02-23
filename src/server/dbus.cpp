@@ -6,6 +6,7 @@
 #include "../event/eps_signal.h"
 #include "../event/leop_signal.h"
 #include "../event/adcs_signal.h"
+#include "../event/adcs_req_signal.h"
 #include "../event/manualmode_req.h"
 #include "../event/req_procedure_call.h"
 #include "../event/req_shell_command.h"
