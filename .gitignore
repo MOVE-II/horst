@@ -39,3 +39,11 @@ Makefile
 callgrind.out.*
 perf.data*
 .gdb_history
+
+
+# IDE
+.idea/
+
+# test
+*.html
+*.xml
