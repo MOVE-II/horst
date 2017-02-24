@@ -7,6 +7,7 @@
 #include "../action/trigger_sunpointing.h"
 #include "../action/trigger_detumbling.h"
 #include "../action/trigger_measuring.h"
+#include "../logger.h"
 #include "../util.h"
 
 namespace horst {
@@ -103,6 +104,20 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 	}
 
 	return ret;
+}
+
+State::leop_seq State::str2leop(const char* name) {
+	switch(util::str2int(name)) {
+	case util::str2int("UNDEPLOYED"):
+		return State::leop_seq::UNDEPLOYED;
+	case util::str2int("DEPLOYED"):
+		return State::leop_seq::DEPLOYED;
+	case util::str2int("DONE"):
+		return State::leop_seq::DONE;
+	default:
+		LOG_WARN("Could not interpret '" + std::string(name) + "' as leop sequence!");
+		return State::leop_seq::UNDEPLOYED;
+	}
 }
 
 } // horst

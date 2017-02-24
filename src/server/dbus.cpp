@@ -406,18 +406,18 @@ void DBusConnection::watch_for_signals() {
 		"member='leopStateChange'",
 		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
-			uint8_t leop;
+			char* leop;
 			int r;
 
-			r = sd_bus_message_read(m, "y", &leop);
+			r = sd_bus_message_read(m, "s", &leop);
 			if (r < 0) {
 				LOG_WARN("[dbus] Failed to receive LEOP state change: " + std::string(strerror(-r)));
 				return 0;
 			}
-			LOG_INFO("[dbus] LEOP state changed to: " + std::to_string(leop));
+			LOG_INFO("[dbus] LEOP state changed to: " + std::string(leop));
 
 			/* Generate fact and send it to state logic */
-			auto sig = std::make_shared<LEOPSignal>(static_cast<State::leop_seq>(leop));
+			auto sig = std::make_shared<LEOPSignal>(State::str2leop(leop));
 			this_->get_sat()->on_event(std::move(sig));
 
 			return 0;
@@ -434,7 +434,7 @@ void DBusConnection::watch_for_signals() {
 		nullptr,
 		"type='signal',"
 		"sender='moveii.pl',"
-		"member='pl_measurement_over'",
+		"member='payloadMeasurementDone'",
 		[] (sd_bus_message*, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
 			LOG_INFO("[dbus] Payload measurement is done");
@@ -456,7 +456,7 @@ void DBusConnection::watch_for_signals() {
 		nullptr,
 		"type='signal',"
 		"sender='moveii.pl',"
-		"member='pl_conditions_fulfilled'",
+		"member='payloadConditionsFulfilled'",
 		[] (sd_bus_message*, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
 			LOG_INFO("[dbus] Payload wants to measure");
@@ -483,7 +483,6 @@ void DBusConnection::watch_for_signals() {
 		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
 			char* adcs_status_string;
-			ADCS::adcs_state adcs_status;
 			int r;
 
 			r = sd_bus_message_read(m, "s", &adcs_status_string);
@@ -491,12 +490,10 @@ void DBusConnection::watch_for_signals() {
 				LOG_WARN("[dbus] Failed to receive ADCS state change: " + std::string(strerror(-r)));
 				return 0;
 			}
-			// TODO: map adcs mode string to state enum or make the enum in ADCS object a string instead
-			LOG_INFO("[dbus] ADCS state changed to: " + std::to_string(*adcs_status_string));
+			LOG_INFO("[dbus] ADCS state reached: " + std::string(adcs_status_string));
 
 			/* Generate fact and send it to state logic */
-			auto sig = std::make_shared<ADCSSignal>(static_cast<ADCS::adcs_state>(adcs_status));
-
+			auto sig = std::make_shared<ADCSSignal>(ADCS::str2state(adcs_status_string));
 			this_->get_sat()->on_event(std::move(sig));
 
 			return 0;
