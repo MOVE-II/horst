@@ -1,10 +1,10 @@
 [Unit]
 Description=HORST
-After=dbus.service s3tp.service eps.service adcs.service pl.service thermal.service
+After=dbus.service s3tp.service eps.service adcs.service pl.service thm.service
 
 [Service]
 Type=dbus
-User=misc
+#User=misc
 BusName=moveii.horst
 ExecStart=/opt/cdh_horst/horst
 
