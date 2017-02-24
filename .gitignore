@@ -42,7 +42,7 @@ perf.data*
 
 
 # IDE
-.idea
+.idea/
 
 # test
 *.html
