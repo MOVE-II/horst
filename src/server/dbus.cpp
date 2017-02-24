@@ -149,7 +149,7 @@ static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	int r = sd_bus_message_read(m, "y", &safemode);
 	if (r < 0) {
 		LOG_ERROR(3, "[dbus] safemode() failed to parse parameters: " + std::string(strerror(-r)));
-		return r;
+		return sd_bus_reply_method_return(m, "b", false);
 	}
 
 	LOG_INFO("[dbus] Request to set safemode to " + std::to_string(safemode));
@@ -346,18 +346,18 @@ void DBusConnection::watch_for_signals() {
 		"member='thmStateChange'",
 		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
-			uint8_t thmlevel;
+			char* thmlevel;
 			int r;
 
-			r = sd_bus_message_read(m, "y", &thmlevel);
+			r = sd_bus_message_read(m, "s", &thmlevel);
 			if (r < 0) {
 				LOG_WARN("[dbus] Failed to receive THM state change: " + std::string(strerror(-r)));
 				return 0;
 			}
-			LOG_INFO("[dbus] THM state changed to: " + std::to_string(thmlevel));
+			LOG_INFO("[dbus] THM state changed to: " + std::string(thmlevel));
 
 			/* Generate fact and send it to state logic */
-			auto req = std::make_shared<THMSignal>(static_cast<THM::overall_temp>(thmlevel));
+			auto req = std::make_shared<THMSignal>(THM::str2temp(thmlevel));
 			this_->get_sat()->on_event(std::move(req));
 
 			return 0;

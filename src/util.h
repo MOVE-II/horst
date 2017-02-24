@@ -54,5 +54,9 @@ void vector_extend(std::vector<T> &vec, std::vector<T> &&ext) {
 /** convert poll flags to libuv event flags */
 int poll_to_libuv_events(int pollflags);
 
+/** Compile time bernstein hash function */
+constexpr unsigned int str2int(const char* str, int h = 0) {
+	return !str[h] ? 5381 : (str2int(str, h+1)*33) ^ str[h];
+}
 
 }} // horst::util

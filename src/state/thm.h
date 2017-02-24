@@ -20,15 +20,6 @@ public:
 	std::vector<std::unique_ptr<Action>> transform_to(const THM &target) const;
 
 	/**
-	 * Temperature state of sband.
-	 * It is a natural fact and can't be changed directly.
-	 */
-	enum class sband_temp {
-		GOOD,
-		BAD
-	} sband_temp;
-
-	/**
 	 * overall temperature state of the satellite.
 	 */
 	enum class overall_temp {
@@ -36,6 +27,8 @@ public:
 		WARN,
 		ALARM,
 	} all_temp;
+
+	static THM::overall_temp str2temp(const char* name);
 };
 
 } // horst

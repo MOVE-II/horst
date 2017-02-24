@@ -14,7 +14,7 @@ namespace horst {
 /**
  * As soon as we reach an EPS battery level below that we will go into safemode
  */
-static const uint16_t safemode_eps_treshold = 3000;
+static const uint16_t safemode_eps_treshold = 5000;
 
 State::State()
 	:
@@ -83,7 +83,7 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 		    this->adcs.requested != ADCS::adcs_state::DETUMB &&
 		    this->leop != leop_seq::UNDEPLOYED) {
 			/* Start detumbling */
-			ret.push_back(std::make_unique<TriggerMeasuring>());
+			ret.push_back(std::make_unique<TriggerDetumbling>());
 		}
 
 		if (this->adcs.pointing == ADCS::adcs_state::DETUMB &&
