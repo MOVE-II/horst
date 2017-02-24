@@ -1,1 +1,1 @@
-busctl --user call moveii.pl /moveii/pl moveii.pl doMeasurement
+busctl --system call moveii.pl /moveii/pl moveii.pl doMeasurement
