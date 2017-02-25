@@ -92,15 +92,6 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 			/* After detumbling always trigger sunpointing */
 			ret.push_back(std::make_unique<TriggerSunpointing>());
 		}
-
-		if (this->eps.battery_level > safemode_eps_treshold &&
-		    this->thm.all_temp == THM::overall_temp::OK &&
-		    this->adcs.pointing == ADCS::adcs_state::SUN &&
-		    this->pl.daemon == Payload::daemon_state::WANTMEASURE &&
-		    this->leop == leop_seq::DONE) {
-			/* Start measuring */
-			ret.push_back(std::make_unique<TriggerMeasuring>());
-		}
 	}
 
 	return ret;
