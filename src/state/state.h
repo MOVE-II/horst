@@ -76,7 +76,11 @@ public:
 	/** State of the ADCS subsystem */
 	ADCS adcs;
 
+	/** Interpret string as leop sequence */
 	static State::leop_seq str2leop(const char* name);
+
+	/** Interpret string as boolean */
+	static bool str2bool(const char* name);
 };
 
 } // horst

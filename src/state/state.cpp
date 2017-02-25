@@ -120,4 +120,16 @@ State::leop_seq State::str2leop(const char* name) {
 	}
 }
 
+bool State::str2bool(const char* name) {
+	switch(util::str2int(name)) {
+	case util::str2int("true"):
+		return true;
+	case util::str2int("false"):
+		return false;
+	default:
+		LOG_WARN("Could not interpret '" + std::string(name) + "' as boolean!");
+		return false;
+	}
+}
+
 } // horst
