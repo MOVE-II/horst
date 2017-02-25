@@ -9,6 +9,7 @@
 #include "error.h"
 #include "logger.h"
 #include "satellite.h"
+#include "util.h"
 
 /**
  * Logger settings
@@ -108,6 +109,29 @@ int run(int argc, char **argv) {
 	try {
 		// set the global args
 		args = parse_args(argc, argv);
+
+		// Check leop status
+		switch (util::exec(args.scripts + "checkleop.sh")) {
+		case 0:
+			// LEOP done
+			LOG_INFO("LEOP is done already");
+			args.leop = State::leop_seq::DONE;
+			break;
+		case 1:
+			// LEOP not done yet
+			LOG_INFO("LEOP is not done yet!");
+			args.leop = State::leop_seq::DEPLOYED;
+			break;
+		default:
+			// ERROR
+			LOG_ERROR(11, "Failed to check leop status!");
+			return 3;
+		}
+
+		// Run startup script
+		if (util::exec(args.scripts + "startup.sh") != 0) {
+			LOG_WARN("Startup script failed!");
+		}
 
 		Satellite move2{args};
 
