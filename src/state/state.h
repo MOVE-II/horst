@@ -41,6 +41,12 @@ public:
 	transform_to(const State &target) const;
 
 	/**
+	  * As soon as we reach an EPS battery level below that we will
+	  * go into safemode
+	  */
+	uint16_t battery_treshold;
+
+	/**
 	 * State of the satellite's main computer.
 	 *
 	 * Used for changes required on the system like program starts,

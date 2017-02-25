@@ -35,7 +35,7 @@ void show_help(const char *progname) {
 	std::cout << "horst\n"
 	          << "MOVE-II satellite manager\n"
 	          << "\n"
-	          << "usage: " << progname << "[-h|--help] [-p|--port=LISTENPORT]\n"
+	          << "usage: " << progname << "[-b|--battery=TRESHOLD] [-h|--help] [-m|--manual] [-p|--port=LISTENPORT] [-s|--scripts=PATH]\n"
 	          << std::endl;
 }
 
@@ -47,13 +47,15 @@ arguments parse_args(int argc, char **argv) {
 	while (true) {
 		int option_index = 0;
 		static struct option long_options[] = {
+			{"battery", required_argument, 0, 'b'},
 			{"help",    no_argument,       0, 'h'},
+			{"manual",  no_argument,       0, 'm'},
 			{"port",    required_argument, 0, 'p'},
 			{"scripts", required_argument, 0, 's'},
 			{0,         0,                 0,  0 }
 		};
 
-		c = getopt_long(argc, argv, "hp:s:", long_options, &option_index);
+		c = getopt_long(argc, argv, "b:hmp:s:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -64,17 +66,25 @@ arguments parse_args(int argc, char **argv) {
 			// printf(" with arg %s", optarg);
 			break;
 
+		case 'b':
+			args.battery_treshold = std::stoi(optarg);
+			break;
+
+		case 'h':
+			show_help(argv[0]);
+			exit(0);
+			break;
+
+		case 'm':
+			args.startmanual = true;
+			break;
+
 		case 'p':
 			args.port = std::stoi(optarg);
 			break;
 
 		case 's':
 			args.scripts = optarg;
-			break;
-
-		case 'h':
-			show_help(argv[0]);
-			exit(0);
 			break;
 
 		case '?':

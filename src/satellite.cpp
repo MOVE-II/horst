@@ -18,6 +18,8 @@ Satellite::Satellite(const arguments &args)
 	tcp_server{this},
 	next_id{0} {
 
+	this->current_state.manualmode = args.startmanual;
+	this->current_state.battery_treshold = args.battery_treshold;
 	uv_loop_init(&this->loop);
 }
 

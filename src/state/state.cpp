@@ -11,14 +11,9 @@
 
 namespace horst {
 
-/**
- * As soon as we reach an EPS battery level below that we will go into safemode
- */
-static const uint16_t safemode_eps_treshold = 3000;
-
 State::State()
 	:
-	safemode{false}, manualmode{false} {}
+	battery_treshold{5000}, safemode{false}, manualmode{false} {}
 
 State State::copy() const {
 	return State{*this};
@@ -45,7 +40,7 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 
 	/* Enter safemode in emergency case */
 	if ((this->thm.all_temp == THM::overall_temp::ALARM or
-	     this->eps.battery_level < safemode_eps_treshold) and
+	     this->eps.battery_level < this->battery_treshold) and
 	    this->safemode == false) {
 		ret.push_back(std::make_unique<EnterSafeMode>());
 	}
@@ -66,7 +61,7 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 	if (!this->safemode && !this->manualmode) {
 
 		if (target.pl.daemon == Payload::daemon_state::WANTMEASURE &&
-		    this->eps.battery_level > safemode_eps_treshold &&
+		    this->eps.battery_level > this->battery_treshold &&
 		    this->thm.all_temp == THM::overall_temp::OK &&
 		    this->adcs.pointing == ADCS::adcs_state::SUN &&
 		    (this->adcs.requested == ADCS::adcs_state::SUN ||
@@ -92,7 +87,7 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 			ret.push_back(std::make_unique<TriggerSunpointing>());
 		}
 
-		if (this->eps.battery_level > safemode_eps_treshold &&
+		if (this->eps.battery_level > this->battery_treshold &&
 		    this->thm.all_temp == THM::overall_temp::OK &&
 		    this->adcs.pointing == ADCS::adcs_state::SUN &&
 		    this->pl.daemon == Payload::daemon_state::WANTMEASURE &&
