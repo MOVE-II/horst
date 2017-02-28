@@ -145,15 +145,15 @@ static int dbus_run(sd_bus_message *m,
 
 static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	DBusConnection *this_ = (DBusConnection *)userdata;
-	bool safemode;
-	int r = sd_bus_message_read(m, "y", &safemode);
+	char* safemode;
+	int r = sd_bus_message_read(m, "s", &safemode);
 	if (r < 0) {
 		LOG_ERROR(3, "[dbus] safemode() failed to parse parameters: " + std::string(strerror(-r)));
-		return r;
+		return sd_bus_reply_method_return(m, "b", false);
 	}
 
-	LOG_INFO("[dbus] Request to set safemode to " + std::to_string(safemode));
-	auto req = std::make_shared<SafeModeReq>(safemode);
+	LOG_INFO("[dbus] Request to set safemode to " + std::string(safemode));
+	auto req = std::make_shared<SafeModeReq>(State::str2bool(safemode));
 	this_->get_sat()->on_event(std::move(req));
 
 	return sd_bus_reply_method_return(m, "b", true);
@@ -203,15 +203,15 @@ static int getBeaconData(sd_bus_message *m, void *userdata, sd_bus_error*) {
 
 static int dbus_manualmode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	DBusConnection *this_ = (DBusConnection *)userdata;
-	bool manualmode;
-	int r = sd_bus_message_read(m, "y", &manualmode);
+	char* manualmode;
+	int r = sd_bus_message_read(m, "s", &manualmode);
 	if (r < 0) {
 		LOG_ERROR(3, "[dbus] manualmode() failed to parse parameters: " + std::string(strerror(-r)));
 		return r;
 	}
 
-	LOG_INFO("[dbus] Request to set manualmode to " + std::to_string(manualmode));
-	auto req = std::make_shared<ManualModeReq>(manualmode);
+	LOG_INFO("[dbus] Request to set manualmode to " + std::string(manualmode));
+	auto req = std::make_shared<ManualModeReq>(State::str2bool(manualmode));
 	this_->get_sat()->on_event(std::move(req));
 
 	return sd_bus_reply_method_return(m, "b", true);
@@ -235,8 +235,8 @@ static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_METHOD("exec", "s", "x", dbus_exec, SD_BUS_VTABLE_UNPRIVILEGED),
 	// b as input does not work. Reading it from the message seems to
 	// destroy the userdata pointer (systemd bug?). Using y instead...
-	SD_BUS_METHOD("safemode", "y", "b", dbus_safemode, SD_BUS_VTABLE_UNPRIVILEGED),
-	SD_BUS_METHOD("manualmode", "y", "b", dbus_manualmode, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("setSafemode", "s", "b", dbus_safemode, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("setManualmode", "s", "b", dbus_manualmode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_SIGNAL("actionDone", "bt", 0),
 	SD_BUS_METHOD("getBeaconData", "", "ay", getBeaconData, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("checkDaemon", "", "q", checkDaemon, SD_BUS_VTABLE_UNPRIVILEGED),
@@ -346,18 +346,18 @@ void DBusConnection::watch_for_signals() {
 		"member='thmStateChange'",
 		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
-			uint8_t thmlevel;
+			char* thmlevel;
 			int r;
 
-			r = sd_bus_message_read(m, "y", &thmlevel);
+			r = sd_bus_message_read(m, "s", &thmlevel);
 			if (r < 0) {
 				LOG_WARN("[dbus] Failed to receive THM state change: " + std::string(strerror(-r)));
 				return 0;
 			}
-			LOG_INFO("[dbus] THM state changed to: " + std::to_string(thmlevel));
+			LOG_INFO("[dbus] THM state changed to: " + std::string(thmlevel));
 
 			/* Generate fact and send it to state logic */
-			auto req = std::make_shared<THMSignal>(static_cast<THM::overall_temp>(thmlevel));
+			auto req = std::make_shared<THMSignal>(THM::str2temp(thmlevel));
 			this_->get_sat()->on_event(std::move(req));
 
 			return 0;
@@ -406,18 +406,18 @@ void DBusConnection::watch_for_signals() {
 		"member='leopStateChange'",
 		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
-			uint8_t leop;
+			char* leop;
 			int r;
 
-			r = sd_bus_message_read(m, "y", &leop);
+			r = sd_bus_message_read(m, "s", &leop);
 			if (r < 0) {
 				LOG_WARN("[dbus] Failed to receive LEOP state change: " + std::string(strerror(-r)));
 				return 0;
 			}
-			LOG_INFO("[dbus] LEOP state changed to: " + std::to_string(leop));
+			LOG_INFO("[dbus] LEOP state changed to: " + std::string(leop));
 
 			/* Generate fact and send it to state logic */
-			auto sig = std::make_shared<LEOPSignal>(static_cast<State::leop_seq>(leop));
+			auto sig = std::make_shared<LEOPSignal>(State::str2leop(leop));
 			this_->get_sat()->on_event(std::move(sig));
 
 			return 0;
@@ -434,7 +434,7 @@ void DBusConnection::watch_for_signals() {
 		nullptr,
 		"type='signal',"
 		"sender='moveii.pl',"
-		"member='pl_measurement_over'",
+		"member='payloadMeasurementDone'",
 		[] (sd_bus_message*, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
 			LOG_INFO("[dbus] Payload measurement is done");
@@ -456,7 +456,7 @@ void DBusConnection::watch_for_signals() {
 		nullptr,
 		"type='signal',"
 		"sender='moveii.pl',"
-		"member='pl_conditions_fulfilled'",
+		"member='payloadConditionsFulfilled'",
 		[] (sd_bus_message*, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
 			LOG_INFO("[dbus] Payload wants to measure");
@@ -483,7 +483,6 @@ void DBusConnection::watch_for_signals() {
 		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
 			char* adcs_status_string;
-			ADCS::adcs_state adcs_status;
 			int r;
 
 			r = sd_bus_message_read(m, "s", &adcs_status_string);
@@ -491,12 +490,10 @@ void DBusConnection::watch_for_signals() {
 				LOG_WARN("[dbus] Failed to receive ADCS state change: " + std::string(strerror(-r)));
 				return 0;
 			}
-			// TODO: map adcs mode string to state enum or make the enum in ADCS object a string instead
-			LOG_INFO("[dbus] ADCS state changed to: " + std::to_string(*adcs_status_string));
+			LOG_INFO("[dbus] ADCS state reached: " + std::string(adcs_status_string));
 
 			/* Generate fact and send it to state logic */
-			auto sig = std::make_shared<ADCSSignal>(static_cast<ADCS::adcs_state>(adcs_status));
-
+			auto sig = std::make_shared<ADCSSignal>(ADCS::str2state(adcs_status_string));
 			this_->get_sat()->on_event(std::move(sig));
 
 			return 0;
