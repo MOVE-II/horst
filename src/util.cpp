@@ -77,4 +77,13 @@ int poll_to_libuv_events(int pollflags) {
 	return ret;
 }
 
+int exec(const std::string& cmd) {
+	FILE* fd = popen(cmd.c_str(), "r");
+	int exit = 100;
+	if (fd != NULL) {
+		exit = pclose(fd);
+	}
+	return WEXITSTATUS(exit);
+}
+
 }} // horst::util

@@ -9,6 +9,7 @@
 #include "error.h"
 #include "logger.h"
 #include "satellite.h"
+#include "util.h"
 
 /**
  * Logger settings
@@ -35,7 +36,7 @@ void show_help(const char *progname) {
 	std::cout << "horst\n"
 	          << "MOVE-II satellite manager\n"
 	          << "\n"
-	          << "usage: " << progname << "[-h|--help] [-p|--port=LISTENPORT]\n"
+	          << "usage: " << progname << "[-b|--battery=TRESHOLD] [-h|--help] [-m|--manual] [-p|--port=LISTENPORT] [-s|--scripts=PATH]\n"
 	          << std::endl;
 }
 
@@ -47,13 +48,15 @@ arguments parse_args(int argc, char **argv) {
 	while (true) {
 		int option_index = 0;
 		static struct option long_options[] = {
+			{"battery", required_argument, 0, 'b'},
 			{"help",    no_argument,       0, 'h'},
+			{"manual",  no_argument,       0, 'm'},
 			{"port",    required_argument, 0, 'p'},
 			{"scripts", required_argument, 0, 's'},
 			{0,         0,                 0,  0 }
 		};
 
-		c = getopt_long(argc, argv, "hp:s:", long_options, &option_index);
+		c = getopt_long(argc, argv, "b:hmp:s:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -64,17 +67,25 @@ arguments parse_args(int argc, char **argv) {
 			// printf(" with arg %s", optarg);
 			break;
 
+		case 'b':
+			args.battery_treshold = std::stoi(optarg);
+			break;
+
+		case 'h':
+			show_help(argv[0]);
+			exit(0);
+			break;
+
+		case 'm':
+			args.startmanual = true;
+			break;
+
 		case 'p':
 			args.port = std::stoi(optarg);
 			break;
 
 		case 's':
 			args.scripts = optarg;
-			break;
-
-		case 'h':
-			show_help(argv[0]);
-			exit(0);
 			break;
 
 		case '?':
@@ -98,6 +109,29 @@ int run(int argc, char **argv) {
 	try {
 		// set the global args
 		args = parse_args(argc, argv);
+
+		// Check leop status
+		switch (util::exec(args.scripts + "checkleop.sh")) {
+		case 0:
+			// LEOP done
+			LOG_INFO("LEOP is done already");
+			args.leop = State::leop_seq::DONE;
+			break;
+		case 1:
+			// LEOP not done yet
+			LOG_INFO("LEOP is not done yet!");
+			args.leop = State::leop_seq::DEPLOYED;
+			break;
+		default:
+			// ERROR
+			LOG_ERROR(11, "Failed to check leop status!");
+			return 3;
+		}
+
+		// Run startup script
+		if (util::exec(args.scripts + "startup.sh") != 0) {
+			LOG_WARN("Startup script failed!");
+		}
 
 		Satellite move2{args};
 
