@@ -19,6 +19,14 @@ Configuration File
 
 There is no configuration file.
 
+Commandline Parameters
+=======================
+
+| Parameter        | Default value | Value |
+|------------------|---------------|-------|
+| -                | 5000          | Battery treshold. If battery level fall below, we will go into safemode |
+| --scripts <path> | ./scripts/    | Path to scripts directory |
+
 D-Bus interface
 ===============
 

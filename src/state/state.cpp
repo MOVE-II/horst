@@ -7,6 +7,7 @@
 #include "../action/trigger_sunpointing.h"
 #include "../action/trigger_detumbling.h"
 #include "../action/trigger_measuring.h"
+#include "../logger.h"
 #include "../util.h"
 
 namespace horst {
@@ -14,7 +15,7 @@ namespace horst {
 /**
  * As soon as we reach an EPS battery level below that we will go into safemode
  */
-static const uint16_t safemode_eps_treshold = 3000;
+static const uint16_t safemode_eps_treshold = 5000;
 
 State::State()
 	:
@@ -83,7 +84,7 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 		    this->adcs.requested != ADCS::adcs_state::DETUMB &&
 		    this->leop != leop_seq::UNDEPLOYED) {
 			/* Start detumbling */
-			ret.push_back(std::make_unique<TriggerMeasuring>());
+			ret.push_back(std::make_unique<TriggerDetumbling>());
 		}
 
 		if (this->adcs.pointing == ADCS::adcs_state::DETUMB &&
@@ -91,18 +92,35 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 			/* After detumbling always trigger sunpointing */
 			ret.push_back(std::make_unique<TriggerSunpointing>());
 		}
-
-		if (this->eps.battery_level > safemode_eps_treshold &&
-		    this->thm.all_temp == THM::overall_temp::OK &&
-		    this->adcs.pointing == ADCS::adcs_state::SUN &&
-		    this->pl.daemon == Payload::daemon_state::WANTMEASURE &&
-		    this->leop == leop_seq::DONE) {
-			/* Start measuring */
-			ret.push_back(std::make_unique<TriggerMeasuring>());
-		}
 	}
 
 	return ret;
+}
+
+State::leop_seq State::str2leop(const char* name) {
+	switch(util::str2int(name)) {
+	case util::str2int("UNDEPLOYED"):
+		return State::leop_seq::UNDEPLOYED;
+	case util::str2int("DEPLOYED"):
+		return State::leop_seq::DEPLOYED;
+	case util::str2int("DONE"):
+		return State::leop_seq::DONE;
+	default:
+		LOG_WARN("Could not interpret '" + std::string(name) + "' as leop sequence!");
+		return State::leop_seq::UNDEPLOYED;
+	}
+}
+
+bool State::str2bool(const char* name) {
+	switch(util::str2int(name)) {
+	case util::str2int("true"):
+		return true;
+	case util::str2int("false"):
+		return false;
+	default:
+		LOG_WARN("Could not interpret '" + std::string(name) + "' as boolean!");
+		return false;
+	}
 }
 
 } // horst

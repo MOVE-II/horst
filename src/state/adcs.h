@@ -42,6 +42,8 @@ public:
 	 * What pointing we did request
 	 */
 	enum adcs_state requested;
+
+	static ADCS::adcs_state str2state(const char* name);
 };
 
 } // horst
