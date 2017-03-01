@@ -1,7 +1,9 @@
 [Unit]
 Description=horst detumble timer
+
 [Timer]
-OnBootSec=6min
+OnBootSec=45min
 Unit=horst_detumbler.service
+
 [Install]
 WantedBy=LEOP.target

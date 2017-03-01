@@ -5,6 +5,7 @@ After=horst.service
 [Service]
 Type=oneshot
 #User=misc
-ExecStart=/bin/dbus-send --dest=moveii.h --type=signal /moveii/horst moveii.horst.leopStateChange byte:1
+ExecStart=/bin/dbus-send --dest=moveii.horst --type=signal /moveii/horst moveii.horst.leopStateChange byte:1
+
 [Install]
 WantedBy=skip-LEOP.target
