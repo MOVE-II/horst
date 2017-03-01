@@ -26,8 +26,6 @@ namespace horst {
  * dbus messages can be processed
  */
 static void on_dbus_ready(uv_poll_t *handle, int /*status*/, int events) {
-	LOG_DEBUG("[dbus] Bus is ready for some events: " + std::to_string(events));
-
 	DBusConnection *connection = (DBusConnection *)handle->data;
 
 	sd_bus *bus = connection->get_bus();
@@ -96,15 +94,11 @@ void DBusConnection::update_events() {
 
 	// activate the socket watching,
 	// and if active, invoke the callback function
-	uv_poll_start(&this->connection,
-	              new_events,
-	              &on_dbus_ready);
+	uv_poll_start(&this->connection, new_events, &on_dbus_ready);
 }
 
 
-static int dbus_exec(sd_bus_message *m,
-                     void *userdata,
-                     sd_bus_error * /*ret_error*/) {
+static int dbus_exec(sd_bus_message *m, void *userdata, sd_bus_error*) {
 
 	DBusConnection *this_ = (DBusConnection *)userdata;
 	const char *command;
@@ -123,10 +117,7 @@ static int dbus_exec(sd_bus_message *m,
 	return sd_bus_reply_method_return(m, "x", 0);
 }
 
-
-static int dbus_run(sd_bus_message *m,
-                    void *userdata,
-                    sd_bus_error * /*ret_error*/) {
+static int dbus_run(sd_bus_message *m, void *userdata, sd_bus_error*) {
 
 	DBusConnection *this_ = (DBusConnection *)userdata;
 	const char *name;
@@ -207,7 +198,7 @@ static int dbus_manualmode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	int r = sd_bus_message_read(m, "s", &manualmode);
 	if (r < 0) {
 		LOG_ERROR(3, "[dbus] manualmode() failed to parse parameters: " + std::string(strerror(-r)));
-		return r;
+		return sd_bus_reply_method_return(m, "b", false);
 	}
 
 	LOG_INFO("[dbus] Request to set manualmode to " + std::string(manualmode));
@@ -278,8 +269,7 @@ int DBusConnection::connect() {
 
 	// register the filedescriptor from
 	// sd_bus_get_fd(bus) to libuv
-	uv_poll_init(this->loop, &this->connection,
-	             sd_bus_get_fd(this->bus));
+	uv_poll_init(this->loop, &this->connection, sd_bus_get_fd(this->bus));
 
 
 	// make `this` reachable in callbacks.
