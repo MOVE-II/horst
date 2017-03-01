@@ -6,7 +6,7 @@ After=dbus.service s3tp.service eps.service adcs.service pl.service thm.service
 Type=dbus
 #User=misc
 BusName=moveii.horst
-ExecStart=/opt/cdh_horst/horst
+ExecStart=/opt/cdh_horst/horst -b 7000 -s /opt/cdh_horst/scripts
 
 [Install]
 WantedBy=MOVEII.target
