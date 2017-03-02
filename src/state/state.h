@@ -86,7 +86,7 @@ public:
 	static State::leop_seq str2leop(const char* name);
 
 	/** Interpret string as boolean */
-	static bool str2bool(const char* name);
+	static bool str2bool(char* name);
 };
 
 } // horst
