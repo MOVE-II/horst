@@ -1,6 +1,7 @@
 #include "dbus.h"
 
 #include <iostream>
+#include <stdexcept>
 
 #include "../event/eps_signal.h"
 #include "../event/leop_signal.h"
@@ -25,7 +26,7 @@ namespace horst {
  * callback method used by libuv to notify when
  * dbus messages can be processed
  */
-static void on_dbus_ready(uv_poll_t *handle, int /*status*/, int events) {
+static void on_dbus_ready(uv_poll_t *handle, int /*status*/, int /*events*/) {
 	DBusConnection *connection = (DBusConnection *)handle->data;
 
 	sd_bus *bus = connection->get_bus();
@@ -144,7 +145,13 @@ static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	}
 
 	LOG_INFO("[dbus] Request to set safemode to " + std::string(safemode));
-	auto req = std::make_shared<SafeModeReq>(State::str2bool(safemode));
+	bool bsafe = false;
+	try {
+		bsafe = State::str2bool(safemode);
+	} catch (const std::invalid_argument&) {
+		return sd_bus_reply_method_return(m, "b", false);
+	}
+	auto req = std::make_shared<SafeModeReq>(bsafe);
 	this_->get_sat()->on_event(std::move(req));
 
 	return sd_bus_reply_method_return(m, "b", true);
@@ -202,7 +209,13 @@ static int dbus_manualmode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	}
 
 	LOG_INFO("[dbus] Request to set manualmode to " + std::string(manualmode));
-	auto req = std::make_shared<ManualModeReq>(State::str2bool(manualmode));
+	bool bmanual = false;
+	try {
+		bmanual = State::str2bool(manualmode);
+	} catch (const std::invalid_argument&) {
+		return sd_bus_reply_method_return(m, "b", false);
+	}
+	auto req = std::make_shared<ManualModeReq>(bmanual);
 	this_->get_sat()->on_event(std::move(req));
 
 	return sd_bus_reply_method_return(m, "b", true);
@@ -212,6 +225,37 @@ static int
 checkDaemon(sd_bus_message *m, void*, sd_bus_error*) {
     LOG_DEBUG("Daemons checkDaemon is called");
     return sd_bus_reply_method_return(m, "q", 0);
+}
+
+static int
+getVersion(sd_bus_message *m, void*, sd_bus_error*) {
+    sd_bus_message *retm;
+    LOG_DEBUG("Daemon is asked for version");
+    std::vector<uint16_t> data;
+
+    // Create new return message
+    int r = sd_bus_message_new_method_return(m, &retm);
+    if (r < 0) {
+	LOG_WARN(std::string("Failed to create return message: " + std::string(strerror(-r))));
+	return 0;
+    }
+
+    // Append data to message
+    r = sd_bus_message_append(retm, "s", std::string("daemon=" + std::string(VERSION)).c_str());
+    if (r < 0) {
+	LOG_WARN(std::string("Failed to append data to message: " + std::string(strerror(-r))));
+	return 0;
+    }
+
+    // Send message on bus
+    r = sd_bus_send(sd_bus_message_get_bus(m), retm, NULL);
+    if (r < 0) {
+	LOG_WARN(std::string("Failed to reply return message: " + std::string(strerror(-r))));
+	return 0;
+    }
+
+    sd_bus_message_unref(retm);
+    return 0;
 }
 
 static int
@@ -232,6 +276,7 @@ static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_METHOD("getBeaconData", "", "ay", getBeaconData, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("checkDaemon", "", "q", checkDaemon, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("checkHardware", "", "q", checkHardware, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("getVersion", "", "s", getVersion, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_VTABLE_END
 };
 

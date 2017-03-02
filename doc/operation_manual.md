@@ -23,10 +23,15 @@ There is no configuration file.
 Commandline Parameters
 =======================
 
-| Parameter        | Default value | Value |
-|------------------|---------------|-------|
-| -                | 5000          | Battery treshold. If battery level fall below, we will go into safemode |
-| --scripts <path> | ./scripts/    | Path to scripts directory |
+All parameters have abbreviations with only their first character.
+
+| Parameter            | Default value | Value |
+|----------------------|---------------|-------|
+| --battery <treshold> | 5000          | Battery treshold. If battery level fall below, we will go into safemode |
+| --scripts <path>     | ./scripts/    | Path to scripts directory |
+| --port <port>        | 9001          | Listen port for TCP and S3TP |
+| --manual             | false         | Start HORST in manual mode |
+| --help               | -             | Print short help |
 
 D-Bus interface
 ===============

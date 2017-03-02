@@ -1,5 +1,7 @@
 #include "state.h"
 
+#include <stdexcept>
+
 #include "../action/enter_manualmode.h"
 #include "../action/enter_safemode.h"
 #include "../action/leave_manualmode.h"
@@ -106,15 +108,23 @@ State::leop_seq State::str2leop(const char* name) {
 	}
 }
 
-bool State::str2bool(const char* name) {
+bool State::str2bool(char* name) {
+
+	// Convert to upper case
+	char *p = name;
+	while (*p) {
+		*p = toupper(*p);
+		p++;
+	}
+
 	switch(util::str2int(name)) {
-	case util::str2int("true"):
+	case util::str2int("TRUE"):
 		return true;
-	case util::str2int("false"):
+	case util::str2int("FALSE"):
 		return false;
 	default:
 		LOG_WARN("Could not interpret '" + std::string(name) + "' as boolean!");
-		return false;
+		throw std::invalid_argument("Could not interpret as boolean!");
 	}
 }
 
