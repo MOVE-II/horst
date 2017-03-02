@@ -332,7 +332,7 @@ void DBusConnection::watch_for_signals() {
 		this->bus,
 		nullptr,
 		"type='signal',"
-		"sender='moveii.thm',"
+		"interface='moveii.thm',"
 		"member='thmStateChange'",
 		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
@@ -362,7 +362,7 @@ void DBusConnection::watch_for_signals() {
 		this->bus,
 		nullptr,
 		"type='signal',"
-		"sender='moveii.eps',"
+		"interface='moveii.eps',"
 		"member='epsChargeStateChange'",
 		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
@@ -392,7 +392,7 @@ void DBusConnection::watch_for_signals() {
 		this->bus,
 		nullptr,
 		"type='signal',"
-		"sender='moveii.leop',"
+		"interface='moveii.leop',"
 		"member='leopStateChange'",
 		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
@@ -423,7 +423,7 @@ void DBusConnection::watch_for_signals() {
 		this->bus,
 		nullptr,
 		"type='signal',"
-		"sender='moveii.pl',"
+		"interface='moveii.pl',"
 		"member='payloadMeasurementDone'",
 		[] (sd_bus_message*, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
@@ -445,7 +445,7 @@ void DBusConnection::watch_for_signals() {
 		this->bus,
 		nullptr,
 		"type='signal',"
-		"sender='moveii.pl',"
+		"interface='moveii.pl',"
 		"member='payloadConditionsFulfilled'",
 		[] (sd_bus_message*, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
@@ -468,7 +468,7 @@ void DBusConnection::watch_for_signals() {
 		this->bus,
 		nullptr,
 		"type='signal',"
-		"sender='moveii.adcs',"
+		"interface='moveii.adcs',"
 		"member='adcsStateReached'",
 		[] (sd_bus_message* m, void *userdata, sd_bus_error*) -> int {
 			DBusConnection *this_ = (DBusConnection *) userdata;
