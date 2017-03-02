@@ -28,12 +28,6 @@ public:
 		std::tuple<
 			std::string,
 			std::shared_ptr<ControlMessage>>> shell_commands;
-
-	/** list of procedures to call */
-	std::vector<
-		std::tuple<
-			std::string,
-			std::shared_ptr<ControlMessage>>> procedures;
 };
 
 } // horst
