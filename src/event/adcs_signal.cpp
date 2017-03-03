@@ -1,9 +1,7 @@
 #include "adcs_signal.h"
 
-#include <cstddef>
-#include <iostream>
-
 #include "../state/state.h"
+
 
 namespace horst {
 

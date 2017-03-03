@@ -25,7 +25,7 @@ std::string demangle(const char *symbol) {
 }
 
 
-std::string addr_to_string(const void *addr) {
+static std::string addr_to_string(const void *addr) {
 	std::ostringstream out;
 	out << "[" << addr << "]";
 	return out.str();

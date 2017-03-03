@@ -1,7 +1,5 @@
 #include "leave_safemode.h"
 
-#include <iostream>
-#include <memory>
 #include <sstream>
 
 #include "../event/safemode_signal.h"

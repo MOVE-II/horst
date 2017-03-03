@@ -1,9 +1,7 @@
 #include "error.h"
 
 #include <execinfo.h>
-#include <memory>
 #include <sstream>
-
 
 #include "util.h"
 

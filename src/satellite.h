@@ -1,10 +1,8 @@
 #pragma once
 
 #include <memory>
-#include <queue>
 #include <unordered_map>
 #include <uv.h>
-#include <vector>
 
 #include "client/client.h"
 #include "event/event.h"
