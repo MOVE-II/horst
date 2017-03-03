@@ -1,7 +1,5 @@
 #include "leop_signal.h"
 
-#include <cstddef>
-#include <iostream>
 
 namespace horst {
 

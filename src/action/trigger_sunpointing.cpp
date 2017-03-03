@@ -1,12 +1,10 @@
 #include "trigger_sunpointing.h"
 
-#include <iostream>
-#include <memory>
 #include <sstream>
 
+#include "../event/adcs_req_signal.h"
 #include "../logger.h"
 #include "../satellite.h"
-#include "../event/adcs_req_signal.h"
 
 
 namespace horst {
