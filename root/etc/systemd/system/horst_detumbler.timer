@@ -1,0 +1,9 @@
+[Unit]
+Description=HORST DEPLOYED signal timer
+
+[Timer]
+OnBootSec=45min
+Unit=horst_detumbler.service
+
+[Install]
+WantedBy=LEOP.target
