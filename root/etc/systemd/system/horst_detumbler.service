@@ -1,11 +1,11 @@
 [Unit]
-Description=HORST
+Description=HORST: DEPLOYED Signal
 After=horst.service
 
 [Service]
 Type=oneshot
 #User=misc
-ExecStart=/bin/dbus-send --dest=moveii.horst --type=signal /moveii/horst moveii.horst.leopStateChange byte:1
+ExecStart=/bin/dbus-send --dest=moveii.horst --type=signal /moveii/horst moveii.horst.leopStateChange string:"DEPLOYED"
 
 [Install]
 WantedBy=skip-LEOP.target
