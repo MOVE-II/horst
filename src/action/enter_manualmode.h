@@ -2,6 +2,7 @@
 
 #include "shell_command.h"
 
+
 namespace horst {
 
 class EnterManualMode : public ShellCommand {

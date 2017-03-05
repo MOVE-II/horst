@@ -1,7 +1,5 @@
 #include "enter_manualmode.h"
 
-#include <iostream>
-#include <memory>
 #include <sstream>
 
 #include "../event/manualmode_signal.h"

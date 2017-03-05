@@ -1,11 +1,7 @@
 #pragma once
 
-#include <functional>
-#include <memory>
-#include <string>
-
-#include "event.h"
 #include "../state/payload.h"
+#include "event.h"
 
 
 namespace horst {

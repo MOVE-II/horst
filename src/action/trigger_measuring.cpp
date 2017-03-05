@@ -1,13 +1,11 @@
 #include "trigger_measuring.h"
 
-#include <iostream>
-#include <memory>
 #include <sstream>
 
+#include "../event/payload_signal.h"
 #include "../logger.h"
 #include "../satellite.h"
 #include "../state/payload.h"
-#include "../event/payload_signal.h"
 
 
 namespace horst {

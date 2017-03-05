@@ -20,6 +20,7 @@ Satellite::Satellite(const arguments &args)
 
 	this->current_state.manualmode = args.startmanual;
 	this->current_state.battery_treshold = args.battery_treshold;
+  this->current_state.leop = args.leop;
 	uv_loop_init(&this->loop);
 }
 
@@ -34,10 +35,10 @@ int Satellite::run() {
 	LOG_INFO("[satellite] starting up connections...");
 	int ret;
 
-	if (this->tcp_server.listen(this->args.port)) {
-		LOG_ERROR(3, "[satellite] failed to set up tcp socket.");
-		return 1;
-	}
+	// if (this->tcp_server.listen(this->args.port)) {
+	// 	LOG_ERROR(3, "[satellite] failed to set up tcp socket.");
+	// 	return 1;
+	// }
 
 	if (this->dbus.connect()) {
 		LOG_ERROR(4, "[satellite] failed to listen on dbus.");

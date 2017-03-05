@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.1)
 project(horst CXX)
 set(PROJECT_BRIEF "Horst is the brain of our satellite.")
 
-set(VERSION_MAJOR 0)
-set(VERSION_MINOR 1)
+set(VERSION_MAJOR 2)
+set(VERSION_MINOR 0)
 include(version/version.cmake)
 
 message("configuring horst...")

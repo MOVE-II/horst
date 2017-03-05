@@ -1,9 +1,5 @@
 #pragma once
 
-#include <functional>
-#include <memory>
-#include <string>
-
 #include "../state/state.h"
 #include "event.h"
 

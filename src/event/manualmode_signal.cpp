@@ -1,8 +1,5 @@
 #include "manualmode_signal.h"
 
-#include <cstddef>
-#include <iostream>
-
 #include "../state/state.h"
 
 

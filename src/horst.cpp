@@ -120,7 +120,7 @@ int run(int argc, char **argv) {
 		case 1:
 			// LEOP not done yet
 			LOG_INFO("LEOP is not done yet!");
-			args.leop = State::leop_seq::DEPLOYED;
+			args.leop = State::leop_seq::UNDEPLOYED;
 			break;
 		default:
 			// ERROR
