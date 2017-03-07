@@ -1,9 +1,6 @@
 #include "computer.h"
 
-#include "../action/procedure_call.h"
 #include "../action/shell_command.h"
-
-#include "../procedure/procedure_vm.h"
 #include "../process.h"
 
 
@@ -25,15 +22,6 @@ Computer::transform_to(const Computer &target) const {
 			std::make_unique<ShellCommand>(
 				std::get<0>(cmd_request),  // the command
 				std::get<1>(cmd_request)   // the request
-			)
-		);
-	}
-
-	for (auto &procedure_req : target.procedures) {
-		ret.push_back(
-			std::make_unique<ProcedureCall>(
-				std::get<0>(procedure_req),  // procedure name
-				std::get<1>(procedure_req)   // the request
 			)
 		);
 	}

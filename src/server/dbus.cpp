@@ -10,7 +10,6 @@
 #include "../event/manualmode_req.h"
 #include "../event/payload_req.h"
 #include "../event/payload_signal.h"
-#include "../event/req_procedure_call.h"
 #include "../event/req_shell_command.h"
 #include "../event/safemode_req.h"
 #include "../event/thm_signal.h"
@@ -114,23 +113,6 @@ static int dbus_exec(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	this_->get_sat()->on_event(std::move(req));
 
 	// TODO: maybe do req->call_on_complete([]{real_dbus_return()})
-
-	return sd_bus_reply_method_return(m, "x", 0);
-}
-
-static int dbus_run(sd_bus_message *m, void *userdata, sd_bus_error*) {
-
-	DBusConnection *this_ = (DBusConnection *)userdata;
-	const char *name;
-	int r = sd_bus_message_read(m, "s", &name);
-	if (r < 0) {
-		LOG_ERROR(3, "[dbus] run() failed to parse parameters: " + std::string(strerror(-r)));
-		return r;
-	}
-
-	LOG_INFO("[dbus] Run procedure: " + std::string(name));
-	auto req = std::make_shared<ProcedureCallReq>(name);
-	this_->get_sat()->on_event(std::move(req));
 
 	return sd_bus_reply_method_return(m, "x", 0);
 }
@@ -266,7 +248,6 @@ checkHardware(sd_bus_message *m, void*, sd_bus_error*) {
 
 static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_VTABLE_START(0),
-	SD_BUS_METHOD("run", "s", "x", dbus_run, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("exec", "s", "x", dbus_exec, SD_BUS_VTABLE_UNPRIVILEGED),
 	// b as input does not work. Reading it from the message seems to
 	// destroy the userdata pointer (systemd bug?). Using y instead...

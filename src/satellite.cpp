@@ -104,10 +104,6 @@ Action *Satellite::get_action(id_t id) {
 	}
 }
 
-const Procedure *Satellite::get_procedure(const std::string &name) const {
-	return this->procedures.get_procedure(name);
-}
-
 State *Satellite::get_state() {
 	return &this->current_state;
 }

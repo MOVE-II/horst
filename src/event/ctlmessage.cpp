@@ -2,7 +2,6 @@
 
 #include "../logger.h"
 #include "req_daemon_control.h"
-#include "req_procedure_call.h"
 #include "req_shell_command.h"
 
 
@@ -38,10 +37,7 @@ ControlMessage::parse(const std::string &msg) {
 		return ret;
 	}
 
-	if (command_type == "run") {
-		ret = std::make_unique<ProcedureCallReq>(rest);
-	}
-	else if (command_type == "exec") {
+	if (command_type == "exec") {
 		ret = std::make_unique<ShellCommandReq>(rest);
 	}
 	else if (command_type == "status") {

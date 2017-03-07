@@ -8,7 +8,6 @@
 #include "event/event.h"
 #include "horst.h"
 #include "id.h"
-#include "procedure/procedure_manager.h"
 #include "server/dbus.h"
 #include "server/tcp.h"
 #include "state/state.h"
@@ -78,11 +77,6 @@ public:
 	std::string get_scripts_path();
 
 	/**
-	 * Find a procedure. If not found, return nullptr.
-	 */
-	const Procedure *get_procedure(const std::string &name) const;
-
-	/**
 	 * Get current state of satellite
 	 */
 	State *get_state();
@@ -128,11 +122,6 @@ private:
 	 * counter to identify events.
 	 */
 	id_t next_id;
-
-	/**
-	 * Available procedures.
-	 */
-	ProcedureManager procedures;
 
 	/**
 	 * current state of the satellite.

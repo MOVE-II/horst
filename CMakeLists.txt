@@ -26,7 +26,6 @@ add_executable(horst
 	src/action/enter_safemode.cpp
 	src/action/leave_manualmode.cpp
 	src/action/leave_safemode.cpp
-	src/action/procedure_call.cpp
 	src/action/shell_command.cpp
 	src/action/trigger_detumbling.cpp
 	src/action/trigger_measuring.cpp
@@ -45,20 +44,11 @@ add_executable(horst
 	src/event/payload_req.cpp
 	src/event/payload_signal.cpp
 	src/event/req_daemon_control.cpp
-	src/event/req_procedure_call.cpp
 	src/event/req_shell_command.cpp
 	src/event/safemode_req.cpp
 	src/event/safemode_signal.cpp
 	src/event/thm_signal.cpp
 	src/horst.cpp
-	src/procedure/instruction/halt.cpp
-	src/procedure/instruction/instruction.cpp
-	src/procedure/instruction/loadc.cpp
-	src/procedure/instruction/nop.cpp
-	src/procedure/instruction/sleep.cpp
-	src/procedure/procedure.cpp
-	src/procedure/procedure_manager.cpp
-	src/procedure/procedure_vm.cpp
 	src/process.cpp
 	src/satellite.cpp
 	src/server/dbus.cpp
