@@ -5,7 +5,8 @@ After=horst.service
 [Service]
 Type=oneshot
 #User=misc
-ExecStart=/bin/dbus-send --dest=moveii.horst --type=signal /moveii/leop moveii.leop.leopStateChange string:"DEPLOYED"
+ExecStart=/bin/dbus-send --system --dest=moveii.horst --type=signal /moveii/leop moveii.leop.leopStateChange string:"DEPLOYED"
+
 
 [Install]
-WantedBy=skip-LEOP.target
+WantedBy=LEOP-now.target

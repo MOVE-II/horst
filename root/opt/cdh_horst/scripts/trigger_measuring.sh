@@ -1,1 +1,1 @@
-busctl --system call moveii.pl /moveii/pl moveii.pl doMeasurement
+dbus-send --system --dest=moveii.pl --type=signal /moveii/pl moveii.pl.doMeasurement
