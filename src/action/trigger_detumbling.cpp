@@ -19,7 +19,6 @@ std::string TriggerDetumbling::describe() const {
 	return ss.str();
 }
 
-
 void TriggerDetumbling::perform(Satellite *sat, ac_done_cb_t done) {
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
 		if (success) {

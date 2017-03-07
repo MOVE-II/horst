@@ -66,9 +66,6 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 		if (target.pl.daemon == Payload::daemon_state::WANTMEASURE &&
 		    this->eps.battery_level > this->battery_treshold &&
 		    this->thm.all_temp == THM::overall_temp::OK &&
-		    this->adcs.pointing == ADCS::adcs_state::SUN &&
-		    (this->adcs.requested == ADCS::adcs_state::SUN ||
-		    this->adcs.requested == ADCS::adcs_state::NONE) &&
 		    this->pl.daemon != Payload::daemon_state::MEASURING &&
 		    this->leop == leop_seq::DONE) {
 			/* Start measuring */
