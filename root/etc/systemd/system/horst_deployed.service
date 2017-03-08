@@ -1,5 +1,5 @@
 [Unit]
-Description=HORST: DEPLOYED Signal
+Description=HORST DEPLOYED Signal
 After=horst.service
 
 [Service]
