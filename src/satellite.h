@@ -9,7 +9,6 @@
 #include "horst.h"
 #include "id.h"
 #include "server/dbus.h"
-#include "server/tcp.h"
 #include "state/state.h"
 
 
@@ -108,9 +107,6 @@ private:
 
 	/** DBus connection */
 	DBusConnection dbus;
-
-	/** TCP connection server */
-	TCPServer tcp_server;
 
 	/** list of control clients connected */
 	std::unordered_map<id_t, std::unique_ptr<Client>> clients;
