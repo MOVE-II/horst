@@ -17,7 +17,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic") # -fsanitize=a
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
-set(CMAKE_BUILD_TYPE DEBUG)
+set(CMAKE_BUILD_TYPE RELEASE)
 
 
 add_executable(horst
@@ -31,7 +31,6 @@ add_executable(horst
 	src/action/trigger_measuring.cpp
 	src/action/trigger_sunpointing.cpp
 	src/client/client.cpp
-	src/client/tcp_client.cpp
 	src/error.cpp
 	src/event/ctlmessage.cpp
 	src/event/eps_signal.cpp
@@ -53,7 +52,6 @@ add_executable(horst
 	src/satellite.cpp
 	src/server/dbus.cpp
 	src/server/s3tp.cpp
-	src/server/tcp.cpp
 	src/state/adcs.cpp
 	src/state/com.cpp
 	src/state/computer.cpp
