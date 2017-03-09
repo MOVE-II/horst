@@ -3,7 +3,6 @@
 #include <sstream>
 
 #include "../event/adcs_req_signal.h"
-#include "../logger.h"
 #include "../satellite.h"
 
 

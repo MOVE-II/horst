@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "action/action.h"
-#include "logger.h"
 #include "util.h"
 
 namespace horst {
@@ -14,11 +13,13 @@ Satellite::Satellite(const arguments &args)
 	args{args},
 	loop{},
 	dbus{this},
-	next_id{0} {
+	next_id{0},
+	s3tp_link{} 
+	{
 
 	this->current_state.manualmode = args.startmanual;
 	this->current_state.battery_treshold = args.battery_treshold;
-  this->current_state.leop = args.leop;
+	this->current_state.leop = args.leop;
 	uv_loop_init(&this->loop);
 }
 
@@ -38,7 +39,7 @@ int Satellite::run() {
 		return 1;
 	}
 
-	if (this->listen_s3tp(this->args.port)) {
+	if (this->s3tp_link.initiate((uint8_t)this->args.port, &this->loop)) {
 		LOG_ERROR(5, "[satellite] failed to listen on s3tp.");
 		return 1;
 	}
@@ -50,11 +51,6 @@ int Satellite::run() {
 	return ret;
 }
 
-
-int Satellite::listen_s3tp(int /*port*/) {
-	// TODO register s3tp_connection to event loop.
-	return 0;
-}
 
 std::string Satellite::get_scripts_path() {
 	return args.scripts;

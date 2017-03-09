@@ -9,10 +9,12 @@
 #include "horst.h"
 #include "id.h"
 #include "server/dbus.h"
+#include "server/s3tp.h"
 #include "state/state.h"
 
 
 namespace horst {
+
 
 class Satellite {
 public:
@@ -39,11 +41,6 @@ public:
 	 * Register the listening on dbus.
 	 */
 	int listen_dbus();
-
-	/**
-	 * Set up listening on the s3tp port.
-	 */
-	int listen_s3tp(int port);
 
 	/**
 	 * Return the event loop.
@@ -103,7 +100,7 @@ private:
 	uv_loop_t loop;
 
 	/** s3tp unix socket watcher */
-	uv_loop_t s3tp_connection;
+	S3TPServer s3tp_link;
 
 	/** DBus connection */
 	DBusConnection dbus;
