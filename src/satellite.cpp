@@ -39,10 +39,12 @@ int Satellite::run() {
 		return 1;
 	}
 
+	/*
 	if (this->s3tp_link.initiate((uint8_t)this->args.port, &this->loop)) {
 		LOG_ERROR(5, "[satellite] failed to listen on s3tp.");
 		return 1;
 	}
+	*/
 
 	// let the event loop run forever.
 	LOG_INFO("[satellite] Starting event loop");
