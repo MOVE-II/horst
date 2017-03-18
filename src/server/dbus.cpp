@@ -252,7 +252,6 @@ static const sd_bus_vtable horst_vtable[] = {
 	// destroy the userdata pointer (systemd bug?). Using y instead...
 	SD_BUS_METHOD("setSafemode", "s", "b", dbus_safemode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("setManualmode", "s", "b", dbus_manualmode, SD_BUS_VTABLE_UNPRIVILEGED),
-	SD_BUS_SIGNAL("actionDone", "bt", 0),
 	SD_BUS_METHOD("getBeaconData", "", "ay", getBeaconData, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("checkDaemon", "", "q", checkDaemon, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("checkHardware", "", "q", checkHardware, SD_BUS_VTABLE_UNPRIVILEGED),

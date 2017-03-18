@@ -29,7 +29,7 @@ All parameters have abbreviations with only their first character.
 |----------------------|---------------|-------|
 | --battery <treshold> | 5000          | Battery treshold. If battery level fall below, we will go into safemode |
 | --scripts <path>     | ./scripts/    | Path to scripts directory |
-| --port <port>        | 9001          | Listen port for TCP and S3TP |
+| --port <port>        | 9001          | Listen port for S3TP |
 | --manual             | false         | Start HORST in manual mode |
 | --help               | -             | Print short help |
 
@@ -50,10 +50,11 @@ Methods
 | Method    | Description   |
 |-----------|---------------|
 | exec(s) | Run given shell command |
-| run(s) | Run procedure with given name |
-| set(s) | Some mystic debugging stuff |
-| safemode(y) | Toggle safemode on/off (0=off, 1=on) |
-| manualmode(y) | Toggle manualmode on/off (0=off, 1=on) |
+| setSafemode(s) | Toggle safemode on/off (False=off, True=on) |
+| setManualmode(s) | Toggle manualmode on/off (False=off, True=on) |
+| getBeaconData() | Get beacon data of daemon |
+| checkDaemon() | Get status of beacon (always 0) |
+| checkHardware() | Get hardware status of beacon (always 0) |
 | getVersion() | Get version of daemon |
 
 Signals
@@ -66,6 +67,7 @@ current state table accordingly.
 |-----------|---------------|
 | thmStateChange | Update thm state |
 | epsChargeStateChange | Update battery state |
-| LeopStateChange | Update leop state |
-| PayloadMeasurementDone | Update payload state |
+| leopStateChange | Update leop state |
+| payloadConditionsFullfilled | Update payload state |
+| payloadMeasurementDone | Update payload state |
 | adcsStateChange | Update adcs pointing state |
