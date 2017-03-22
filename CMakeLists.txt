@@ -31,6 +31,7 @@ add_executable(horst
 	src/action/action.cpp
 	src/action/enter_manualmode.cpp
 	src/action/enter_safemode.cpp
+	src/action/finish_leop.cpp
 	src/action/leave_manualmode.cpp
 	src/action/leave_safemode.cpp
 	src/action/shell_command.cpp
@@ -45,6 +46,7 @@ add_executable(horst
 	src/event/manualmode_req.cpp
 	src/event/manualmode_signal.cpp
 	src/event/leop_signal.cpp
+	src/event/leop_req.cpp
 	src/event/adcs_signal.cpp
 	src/event/adcs_req_signal.cpp
 	src/event/payload_req.cpp

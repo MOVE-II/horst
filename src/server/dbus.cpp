@@ -4,7 +4,7 @@
 #include <stdexcept>
 
 #include "../event/eps_signal.h"
-#include "../event/leop_signal.h"
+#include "../event/leop_req.h"
 #include "../event/adcs_signal.h"
 #include "../event/adcs_req_signal.h"
 #include "../event/manualmode_req.h"
@@ -432,7 +432,7 @@ void DBusConnection::watch_for_signals() {
 			LOG_INFO("[dbus] LEOP state changed to: " + std::string(leop));
 
 			/* Generate fact and send it to state logic */
-			auto sig = std::make_shared<LEOPSignal>(State::str2leop(leop));
+			auto sig = std::make_shared<LEOPReq>(State::str2leop(leop));
 			this_->get_sat()->on_event(std::move(sig));
 
 			return 0;

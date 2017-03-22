@@ -4,6 +4,7 @@
 
 #include "../action/enter_manualmode.h"
 #include "../action/enter_safemode.h"
+#include "../action/finish_leop.h"
 #include "../action/leave_manualmode.h"
 #include "../action/leave_safemode.h"
 #include "../action/trigger_sunpointing.h"
@@ -23,7 +24,7 @@ State State::copy() const {
 }
 
 
-std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) const {
+std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) {
 	// this function is the "state transition table"
 	// it calculates what actions are required to reach the target state.
 
@@ -62,6 +63,16 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) co
 	 * manualmode
 	 */
 	if (!this->safemode && !this->manualmode) {
+
+		if (target.leop != this->leop) {
+			if (target.leop == State::leop_seq::DONE) {
+				/* Finish LEOP */
+				ret.push_back(std::make_unique<FinishLEOP>());
+			} else {
+				/* If not moving to DONE, just set the state */
+				this->leop = target.leop;
+			}
+		}
 
 		if (target.pl.daemon == Payload::daemon_state::WANTMEASURE &&
 		    this->eps.battery_level > this->battery_treshold &&
