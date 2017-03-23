@@ -38,7 +38,7 @@ public:
 	 * All the logic of when to do what is implemented here!!!!
 	 */
 	std::vector<std::unique_ptr<Action>>
-	transform_to(const State &target) const;
+	transform_to(const State &target);
 
 	/**
 	  * As soon as we reach an EPS battery level below that we will
