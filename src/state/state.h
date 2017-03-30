@@ -60,6 +60,9 @@ public:
 	/* manual mode deactivates horst logic */
 	bool manualmode;
 
+	/* Maneuver mode for not touching ADCS mode */
+	bool maneuvermode;
+
 	/** The leop sequence we are in */
 	enum class leop_seq {
 		UNDEPLOYED,

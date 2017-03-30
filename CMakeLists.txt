@@ -40,15 +40,16 @@ add_executable(horst
 	src/action/trigger_sunpointing.cpp
 	src/client/client.cpp
 	src/error.cpp
+	src/event/adcs_req_signal.cpp
+	src/event/adcs_signal.cpp
 	src/event/ctlmessage.cpp
 	src/event/eps_signal.cpp
 	src/event/event.cpp
+	src/event/leop_req.cpp
+	src/event/leop_signal.cpp
+	src/event/maneuvermode_signal.cpp
 	src/event/manualmode_req.cpp
 	src/event/manualmode_signal.cpp
-	src/event/leop_signal.cpp
-	src/event/leop_req.cpp
-	src/event/adcs_signal.cpp
-	src/event/adcs_req_signal.cpp
 	src/event/payload_req.cpp
 	src/event/payload_signal.cpp
 	src/event/req_daemon_control.cpp

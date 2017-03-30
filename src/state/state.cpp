@@ -17,7 +17,8 @@ namespace horst {
 
 State::State()
 	:
-	battery_treshold{5000}, safemode{false}, manualmode{false} {}
+	battery_treshold{5000}, safemode{false}, manualmode{false},
+	maneuvermode(false) {}
 
 State State::copy() const {
 	return State{*this};
@@ -83,19 +84,23 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) {
 			ret.push_back(std::make_unique<TriggerMeasuring>());
 		}
 
-		if (this->adcs.pointing != ADCS::adcs_state::SUN &&
-		    this->adcs.pointing != ADCS::adcs_state::DETUMB &&
-		    this->adcs.requested != ADCS::adcs_state::SUN &&
-		    this->adcs.requested != ADCS::adcs_state::DETUMB &&
-		    this->leop != leop_seq::UNDEPLOYED) {
-			/* Start detumbling */
-			ret.push_back(std::make_unique<TriggerDetumbling>());
-		}
+		/* In maneuvermode we do not touch ADCS */
+		if (!this->maneuvermode) {
 
-		if (this->adcs.pointing == ADCS::adcs_state::DETUMB &&
-		    this->leop != leop_seq::UNDEPLOYED) {
-			/* After detumbling always trigger sunpointing */
-			ret.push_back(std::make_unique<TriggerSunpointing>());
+			if (this->adcs.pointing != ADCS::adcs_state::SUN &&
+			    this->adcs.pointing != ADCS::adcs_state::DETUMB &&
+			    this->adcs.requested != ADCS::adcs_state::SUN &&
+			    this->adcs.requested != ADCS::adcs_state::DETUMB &&
+			    this->leop != leop_seq::UNDEPLOYED) {
+				/* Start detumbling */
+				ret.push_back(std::make_unique<TriggerDetumbling>());
+			}
+
+			if (this->adcs.pointing == ADCS::adcs_state::DETUMB &&
+			    this->leop != leop_seq::UNDEPLOYED) {
+				/* After detumbling always trigger sunpointing */
+				ret.push_back(std::make_unique<TriggerSunpointing>());
+			}
 		}
 	}
 

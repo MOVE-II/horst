@@ -12,9 +12,9 @@ Satellite::Satellite(const arguments &args)
 	:
 	args{args},
 	loop{},
+	s3tp_link{},
 	dbus{this},
-	next_id{0},
-	s3tp_link{} 
+	next_id{0}
 	{
 
 	this->current_state.manualmode = args.startmanual;
