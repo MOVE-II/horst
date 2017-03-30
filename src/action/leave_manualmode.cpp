@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "../event/manualmode_signal.h"
+#include "../event/safemode_req.h"
 #include "../satellite.h"
 
 
@@ -30,7 +31,8 @@ void LeaveManualMode::perform(Satellite *sat, ac_done_cb_t done) {
 		// Reenter safemode, if it was on before to be sure
 		// that everything is switched off
 		if (sat->get_state()->safemode) {
-			sat->on_event(std::make_unique<EnterSafeMode>());
+			sat->get_state()->safemode = false;
+			sat->on_event(std::make_shared<SafeModeReq>(true));
 		}
 
 		done(success, action);
