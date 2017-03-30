@@ -26,6 +26,13 @@ void LeaveManualMode::perform(Satellite *sat, ac_done_cb_t done) {
 	sat->on_event(std::make_shared<ManualModeSignal>(false));
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
 		LOG_INFO("[action] Manualmode was left");
+
+		// Reenter safemode, if it was on before to be sure
+		// that everything is switched off
+		if (sat->get_state()->safemode) {
+			sat->on_event(std::make_unique<EnterSafeMode>());
+		}
+
 		done(success, action);
 	});
 }
