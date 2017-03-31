@@ -1,7 +1,8 @@
-# ADCS off, PL off, GPS off, S-Band off
+# ADCS off, PL off, GPS off, S-Band off, GPS off
 
 (
 	systemctl stop pl.service
+	systemctl stop gps
 	sleep 10
 	busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s PLTHM
 
