@@ -2,7 +2,7 @@
 
 (
 	systemctl stop pl.service
-	systemctl stop gps_enable
+	systemctl stop gps
 	sleep 10
 	busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s PLTHM
 
