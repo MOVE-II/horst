@@ -51,6 +51,7 @@ Methods
 |-----------|---------------|
 | exec(s) | Run given shell command |
 | setSafemode(s) | Toggle safemode on/off (False=off, True=on) |
+| setManeuvermode(s) | Toggle maneuvermode on/off (False=off, True=on) |
 | setManualmode(s) | Toggle manualmode on/off (False=off, True=on) |
 | getBeaconData() | Get beacon data of daemon |
 | checkDaemon() | Get status of beacon (always 0) |

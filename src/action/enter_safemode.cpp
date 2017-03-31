@@ -2,6 +2,7 @@
 
 #include <sstream>
 
+#include "../event/maneuvermode_signal.h"
 #include "../event/safemode_signal.h"
 #include "../satellite.h"
 
@@ -21,6 +22,10 @@ std::string EnterSafeMode::describe() const {
 
 void EnterSafeMode::perform(Satellite *sat, ac_done_cb_t done) {
 	LOG_INFO("[action] Entering safemode");
+
+	// Always deactivate maneuvermode
+	sat->on_event(std::make_shared<ManeuverModeSignal>(false));
+
 	sat->on_event(std::make_shared<SafeModeSignal>(true));
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
 		LOG_INFO("[action] Safemode was entered");

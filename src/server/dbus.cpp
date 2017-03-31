@@ -7,6 +7,7 @@
 #include "../event/leop_req.h"
 #include "../event/adcs_signal.h"
 #include "../event/adcs_req_signal.h"
+#include "../event/maneuvermode_signal.h"
 #include "../event/manualmode_req.h"
 #include "../event/payload_req.h"
 #include "../event/payload_signal.h"
@@ -138,6 +139,28 @@ static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	return sd_bus_reply_method_return(m, "b", true);
 }
 
+static int dbus_maneuvermode(sd_bus_message *m, void *userdata, sd_bus_error*) {
+	DBusConnection *this_ = (DBusConnection *)userdata;
+	char* maneuvermode;
+	int r = sd_bus_message_read(m, "s", &maneuvermode);
+	if (r < 0) {
+		LOG_ERROR(3, "[dbus] maneuvermode() failed to parse parameters: " + std::string(strerror(-r)));
+		return sd_bus_reply_method_return(m, "b", false);
+	}
+
+	LOG_INFO("[dbus] Request to set maneuvermode to " + std::string(maneuvermode));
+	bool bmaneuver = false;
+	try {
+		bmaneuver = State::str2bool(maneuvermode);
+	} catch (const std::invalid_argument&) {
+		return sd_bus_reply_method_return(m, "b", false);
+	}
+	auto req = std::make_shared<ManeuverModeSignal>(bmaneuver);
+	this_->get_sat()->on_event(std::move(req));
+
+	return sd_bus_reply_method_return(m, "b", true);
+}
+
 static int getBeaconData(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	DBusConnection *this_ = (DBusConnection *)userdata;
 	State* state = this_->get_sat()->get_state();
@@ -154,6 +177,7 @@ static int getBeaconData(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	// Fill data
 	data.push_back((uint8_t) state->safemode);
 	data.push_back((uint8_t) state->manualmode);
+	data.push_back((uint8_t) state->maneuvermode);
 	data.push_back((uint8_t) (state->eps.battery_level >> 8));
 	data.push_back((uint8_t) (state->eps.battery_level & 0xFF));
 	data.push_back((uint8_t) state->thm.all_temp);
@@ -251,6 +275,7 @@ static const sd_bus_vtable horst_vtable[] = {
 	// b as input does not work. Reading it from the message seems to
 	// destroy the userdata pointer (systemd bug?). Using y instead...
 	SD_BUS_METHOD("setSafemode", "s", "b", dbus_safemode, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("setManeuvermode", "s", "b", dbus_maneuvermode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("setManualmode", "s", "b", dbus_manualmode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("getBeaconData", "", "ay", getBeaconData, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("checkDaemon", "", "q", checkDaemon, SD_BUS_VTABLE_UNPRIVILEGED),
