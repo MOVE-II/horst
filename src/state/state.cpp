@@ -59,21 +59,30 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) {
 		ret.push_back(std::make_unique<LeaveSafeMode>());
 	}
 
+	/*
+	 * Handle LEOP state changes
+	 * All changes will be requests, but only changes to DONE will actually
+	 * trigger any action.
+	 * This is safe to do regardless of safemode/manualmode, since the DONE
+	 * will only be triggered manually!
+	 *
+	 */
+	if (target.leop != this->leop) {
+		if (target.leop == State::leop_seq::DONE) {
+			/* Finish LEOP */
+			ret.push_back(std::make_unique<FinishLEOP>());
+		} else {
+			/* If not moving to DONE, just set the state */
+			this->leop = target.leop;
+		}
+	}
+
 	/**
 	 * All following rules only apply if we are neither in safemode nor in
 	 * manualmode
 	 */
 	if (!this->safemode && !this->manualmode) {
 
-		if (target.leop != this->leop) {
-			if (target.leop == State::leop_seq::DONE) {
-				/* Finish LEOP */
-				ret.push_back(std::make_unique<FinishLEOP>());
-			} else {
-				/* If not moving to DONE, just set the state */
-				this->leop = target.leop;
-			}
-		}
 
 		if (target.pl.daemon == Payload::daemon_state::WANTMEASURE &&
 		    this->eps.battery_level > this->battery_treshold &&

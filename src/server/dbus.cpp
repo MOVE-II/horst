@@ -171,7 +171,7 @@ static int getBeaconData(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	int r = sd_bus_message_new_method_return(m, &retm);
 	if (r < 0) {
 		std::cout << "Failed to create return message: " << strerror(-r) << std::endl;
-		return 0;
+		return 1;
 	}
 
 	// Fill data
@@ -190,18 +190,18 @@ static int getBeaconData(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	r = sd_bus_message_append_array(retm, 'y', &data[0], data.size());
 	if (r < 0) {
 		std::cout << "Failed to append data to message: " << strerror(-r) << std::endl;
-		return 0;
+		return 1;
 	}
 
 	// Send message on bus
 	r = sd_bus_send(sd_bus_message_get_bus(m), retm, NULL);
 	if (r < 0) {
 		std::cout << "Failed to reply return message: " << strerror(-r) << std::endl;
-		return 0;
+		return 1;
 	}
 
 	sd_bus_message_unref(retm);
-	return 0;
+	return 1;
 }
 
 static int dbus_manualmode(sd_bus_message *m, void *userdata, sd_bus_error*) {
