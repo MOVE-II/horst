@@ -242,25 +242,25 @@ getVersion(sd_bus_message *m, void*, sd_bus_error*) {
     int r = sd_bus_message_new_method_return(m, &retm);
     if (r < 0) {
 	LOG_WARN(std::string("Failed to create return message: " + std::string(strerror(-r))));
-	return 0;
+	return 1;
     }
 
     // Append data to message
     r = sd_bus_message_append(retm, "s", std::string("daemon=" + std::string(VERSION)).c_str());
     if (r < 0) {
 	LOG_WARN(std::string("Failed to append data to message: " + std::string(strerror(-r))));
-	return 0;
+	return 1;
     }
 
     // Send message on bus
     r = sd_bus_send(sd_bus_message_get_bus(m), retm, NULL);
     if (r < 0) {
 	LOG_WARN(std::string("Failed to reply return message: " + std::string(strerror(-r))));
-	return 0;
+	return 1;
     }
 
     sd_bus_message_unref(retm);
-    return 0;
+    return 1;
 }
 
 static int
@@ -272,8 +272,6 @@ checkHardware(sd_bus_message *m, void*, sd_bus_error*) {
 static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_VTABLE_START(0),
 	SD_BUS_METHOD("exec", "s", "x", dbus_exec, SD_BUS_VTABLE_UNPRIVILEGED),
-	// b as input does not work. Reading it from the message seems to
-	// destroy the userdata pointer (systemd bug?). Using y instead...
 	SD_BUS_METHOD("setSafemode", "s", "b", dbus_safemode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("setManeuvermode", "s", "b", dbus_maneuvermode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("setManualmode", "s", "b", dbus_manualmode, SD_BUS_VTABLE_UNPRIVILEGED),
