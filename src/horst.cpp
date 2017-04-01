@@ -124,7 +124,7 @@ int run(int argc, char **argv) {
 		default:
 			// ERROR
 			LOG_ERROR(11, "Failed to check leop status!");
-			return 3;
+			args.leop = State::leop_seq::DEPLOYED;
 		}
 
 		// Run startup script

@@ -43,7 +43,7 @@ public:
 	 */
 	enum adcs_state requested;
 
-	static ADCS::adcs_state str2state(const char* name);
+	static ADCS::adcs_state str2state(char* name);
 };
 
 } // horst

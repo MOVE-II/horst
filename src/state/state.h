@@ -86,7 +86,7 @@ public:
 	ADCS adcs;
 
 	/** Interpret string as leop sequence */
-	static State::leop_seq str2leop(const char* name);
+	static State::leop_seq str2leop(char* name);
 
 	/** Interpret string as boolean */
 	static bool str2bool(char* name);

@@ -17,7 +17,15 @@ ADCS::transform_to(const ADCS & /*target*/) const {
 	return ret;
 }
 
-ADCS::adcs_state ADCS::str2state(const char* name) {
+ADCS::adcs_state ADCS::str2state(char* name) {
+
+	// Convert to upper case
+	char *p = name;
+	while (*p) {
+		*p = toupper(*p);
+		p++;
+	}
+
 	switch(util::str2int(name)) {
 	case util::str2int("NONE"):
 		return ADCS::adcs_state::NONE;

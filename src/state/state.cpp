@@ -116,7 +116,15 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) {
 	return ret;
 }
 
-State::leop_seq State::str2leop(const char* name) {
+State::leop_seq State::str2leop(char* name) {
+
+	// Convert to upper case
+	char *p = name;
+	while (*p) {
+		*p = toupper(*p);
+		p++;
+	}
+
 	switch(util::str2int(name)) {
 	case util::str2int("UNDEPLOYED"):
 		return State::leop_seq::UNDEPLOYED;
