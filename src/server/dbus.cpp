@@ -178,8 +178,8 @@ static int getBeaconData(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	data.push_back((uint8_t) state->safemode);
 	data.push_back((uint8_t) state->manualmode);
 	data.push_back((uint8_t) state->maneuvermode);
-	data.push_back((uint8_t) (state->eps.battery_level >> 8));
 	data.push_back((uint8_t) (state->eps.battery_level & 0xFF));
+	data.push_back((uint8_t) (state->eps.battery_level >> 8));
 	data.push_back((uint8_t) state->thm.all_temp);
 	data.push_back((uint8_t) state->adcs.pointing);
 	data.push_back((uint8_t) state->adcs.requested);
