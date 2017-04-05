@@ -1,125 +1,123 @@
 #include "s3tp.h"
 
-#define S3TP_DEFAULT_PORT 99
-
 namespace horst {
 
-	S3tpCallback4Horst::S3tpCallback4Horst()
-	{
-	
-	}
+	S3TPServer::S3TPServer() {
+		s3tpSocketPath = S3TP_SOCKETPATH;
 
-	S3TPServer::S3TPServer():cbs{},channel{this->s3tp_cfg, this->cbs}
-	{	
 		// create channel instance and default the config
 		this->s3tp_cfg.port = S3TP_DEFAULT_PORT; // default Local port to bind to
 		this->s3tp_cfg.options = 0;
 		this->s3tp_cfg.channel = 3; // This represents the virtual channel used by NanoLink
+		this->channel = new S3tpChannelEvent(this->s3tp_cfg, *this);
 	}
-	
-	S3TPServer::~S3TPServer()
-	{
+
+	S3TPServer::~S3TPServer() {
 		uv_poll_stop(&this->connection);
 	}
 
-	void S3TPServer::on_s3tp_event(uv_poll_t *handle,
-		                  int status,
-		                  int events) 
-	{
+	void S3TPServer::on_s3tp_event(uv_poll_t *handle, int status, int events) {
+		LOG_DEBUG("horst s3tp on_s3tp_event ");
 		S3TPServer *s3tp_link_ref = ((S3TPServer *)handle->data);
-		int current_events = s3tp_link_ref->channel.getActiveEvents();
-	
-		if(current_events & S3TP_ASYNC_EVENT_READ){
-			s3tp_link_ref->channel.handleIncomingData(); 
-		}
-		if(current_events & S3TP_ASYNC_EVENT_WRITE){
-			s3tp_link_ref->channel.handleOutgoingData();
-		}
-	
-	
-		current_events = s3tp_link_ref->channel.getActiveEvents();
-		if(current_events & S3TP_ASYNC_EVENT_READ)
-			current_events |= UV_READABLE;
-		if(current_events & S3TP_ASYNC_EVENT_WRITE)
-			current_events |= UV_WRITABLE;
-			                  
-		uv_poll_start(handle,
-		              current_events | UV_DISCONNECT,
-		              S3TPServer::on_s3tp_event);
 
+		if(events & UV_READABLE){
+			s3tp_link_ref->channel->handleIncomingData();
+		}
+		if(events & UV_WRITABLE){
+			s3tp_link_ref->channel->handleOutgoingData();
+		}
 
+		s3tp_link_ref->update_events();
 	}
 
+	void S3TPServer::update_events() {
+		int next_events = 0;
+		int current_events = this->channel->getActiveEvents();
+		if (current_events & S3TP_ASYNC_EVENT_READ)
+			next_events |= UV_READABLE;
+		if (current_events & S3TP_ASYNC_EVENT_WRITE)
+			next_events |= UV_WRITABLE;
 
-	int S3TPServer::initiate(uint8_t port, uv_loop_t *loop_ref) 
-	{
-		int r;
+		uv_poll_start(&this->connection,
+		              next_events | UV_DISCONNECT,
+		              &S3TPServer::on_s3tp_event);
+	}
+
+	int S3TPServer::start(uv_loop_t *loop_ref) {
+		int r = 0;
 		int error = 0;
 		int current_events = 0;
-
 		int s3tp_fd;
-		
+		this->loop = loop_ref;
+
 		//Bind channel to S3TP daemon
-		this->s3tp_cfg.port = port;
-		this->channel.bind(error);
+		this->channel->bind(error);
 		if (error != 0) {
-			LOG_WARN(std::string("Failed to bind to s3tp: " + std::string(strerror(-r))));
+			LOG_WARN(std::string("Failed to bind to s3tp: " + std::to_string(error)));
 			return 1;
 		}
-	
-		if (this->channel.accept() < 0) {
+
+		r = this->channel->accept();
+		if (r < 0) {
 			LOG_WARN(std::string("Failed to register for s3tp events: " + std::string(strerror(-r))));
 			return 1;
 		}
 
-		current_events = this->channel.getActiveEvents();
-		s3tp_fd = this->channel.getSocket()->getFileDescriptor();
+		current_events = this->channel->getActiveEvents();
+		s3tp_fd = this->channel->getSocket()->getFileDescriptor();
 
 		// initialize the s3tp fd events polling object
-		uv_poll_init(loop_ref, &this->connection,
-		             s3tp_fd);
-	
+		uv_poll_init(this->loop, &this->connection, s3tp_fd);
+
 		// make `this` reachable in event loop callbacks.
 		this->connection.data = this;
 		uv_poll_start(&this->connection,
 		              UV_READABLE | UV_WRITABLE | UV_DISCONNECT,
-		              S3TPServer::on_s3tp_event);
-		              
+		              &S3TPServer::on_s3tp_event);
+
+		this->channel->handleIncomingData();
+		this->channel->handleOutgoingData();
+
 		return 0;
 	}
 
-	void S3tpCallback4Horst::onConnected(S3tpChannel &channel) 
-	{
-    		LOG_DEBUG("horst s3tp connection is active");
+	void S3TPServer::onConnected(S3tpChannel &channel) {
+		LOG_DEBUG("horst s3tp connection is active");
 	}
 
-	void S3tpCallback4Horst::onDisconnected(S3tpChannel &channel,
-			      int error) 
-	{
-    		LOG_DEBUG("horst s3tp connection closed with error ");}
+	void S3TPServer::onDisconnected(S3tpChannel &channel, int error) {
+		LOG_WARN("S3TP onDisconnected, error=" + std::to_string(error));
+	}
 
-	void S3tpCallback4Horst::onDataReceived(S3tpChannel &channel,
-			  char *data, size_t len) 
-	{
+	void S3TPServer::onDataReceived(S3tpChannel &channel, char *data, size_t len) {
+		LOG_DEBUG("Received " + std::to_string(len) + " bytes over s3tp");
+
 		//Copy the data immediately, as the buffer is used by the connector and will be overwritten by the next read operation
-		char * bufferCopy = new char[len + 1];
+		char * bufferCopy = (char*) malloc(len * sizeof(char));
+		if (bufferCopy == NULL) {
+			LOG_WARN("[s3tp] Malloc for incoming data failed!");
+			return;
+		}
 		memcpy(bufferCopy, data, len);
 		bufferCopy[len] = '\0';
+
+		channel.send((void*)bufferCopy, len);
 		std::cout << bufferCopy << std::endl;
-		delete[] bufferCopy;
+
+		free(bufferCopy);
 	}
 
-	void S3tpCallback4Horst::onBufferFull(S3tpChannel &channel) 
-	{
+	void S3TPServer::onBufferFull(S3tpChannel &channel) {
+		LOG_DEBUG("Buffer is full");
 	}
 
-	void S3tpCallback4Horst::onBufferEmpty(S3tpChannel &channel) 
-	{
+	void S3TPServer::onBufferEmpty(S3tpChannel &channel) {
+		LOG_DEBUG("Buffer is empty");
 	}
 
-	void S3tpCallback4Horst::onError(int error) 
-	{
-	// TODO: reconnect after some timer!
+	void S3TPServer::onError(int error) {
+		LOG_WARN("S3TP connection closed with error " + std::to_string(error));
+		// TODO: reconnect after some timer!
 	}
 
 } // horst

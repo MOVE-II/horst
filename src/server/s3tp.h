@@ -3,37 +3,24 @@
 #include <uv.h>
 #include <s3tp/connector/S3tpChannelEvent.h>
 
+#define S3TP_DEFAULT_PORT 99
+#define S3TP_SOCKETPATH "/tmp/s3tp4000"
+
 
 namespace horst {
 
-
-class S3tpCallback4Horst : public S3tpCallback {
-public:
-	S3tpCallback4Horst();
-	
-	// s3tp event callbacks
-	void onConnected(S3tpChannel &channel) override;
-	void onDisconnected(S3tpChannel &channel,
-	                      int error) override;
-	void onDataReceived(S3tpChannel &channel,
-	                  char *data, size_t len) override;
-	void onBufferFull(S3tpChannel &channel) override;
-	void onBufferEmpty(S3tpChannel &channel) override;
-	void onError(int error) override;
-
-};
-
-
-class S3TPServer {
+class S3TPServer : public S3tpCallback {
 public:
 	S3TPServer();
 
 	virtual ~S3TPServer();
 
-	static void on_s3tp_event(uv_poll_t *handle,
-                          int status,
-                          int events) ;
-	int initiate(uint8_t port, uv_loop_t *loop_ref);
+	static void on_s3tp_event(uv_poll_t *handle, int status, int events);
+
+	/**
+	 * Start s3tp server
+	 */
+	int start(uv_loop_t*);
 
 protected:
 	/**
@@ -44,17 +31,27 @@ protected:
 	/**
 	 * s3tp connection handle
 	 */
-	S3tpChannelEvent channel;
+	S3tpChannelEvent *channel;
 
 	/**
-	 * s3tp callback object
+	 * Reference to event loop
 	 */
-	S3tpCallback4Horst cbs;
+	uv_loop_t *loop;
 
 	/**
 	 * tcp server for control clients
 	 */
 	uv_poll_t connection;
+
+	void update_events();
+
+	// s3tp event callbacks
+	void onConnected(S3tpChannel &channel) override;
+	void onDisconnected(S3tpChannel &channel, int error) override;
+	void onDataReceived(S3tpChannel &channel, char *data, size_t len) override;
+	void onBufferFull(S3tpChannel &channel) override;
+	void onBufferEmpty(S3tpChannel &channel) override;
+	void onError(int error) override;
 };
 
 
