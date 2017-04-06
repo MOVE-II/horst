@@ -110,7 +110,7 @@ int run(int argc, char **argv) {
 		args = parse_args(argc, argv);
 
 		// Check leop status
-		switch (util::exec(args.scripts + "checkleop.sh")) {
+		switch (util::exec(args.scripts + "check_leop.sh")) {
 		case 0:
 			// LEOP done
 			LOG_INFO("LEOP is done already");
