@@ -27,3 +27,6 @@ configure_file(
 	${version_file_in}
 	${version_file}
 )
+
+message(STATUS "VERSION_STRING={${VERSION_STRING}}")
+
