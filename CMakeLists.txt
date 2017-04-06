@@ -1,6 +1,7 @@
-cmake_minimum_required(VERSION 3.1)
-project(horst CXX)
-set(PROJECT_BRIEF "Horst is the brain of Move2 satellite.")
+cmake_minimum_required(VERSION 3.2)
+
+project(HORST)
+set(PROJECT_BRIEF “HORST is the brain of the MOVEII satellite.")
 
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 1)
