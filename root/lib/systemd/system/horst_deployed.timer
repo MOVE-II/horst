@@ -1,5 +1,5 @@
 [Unit]
-Description=HORST DEPLOYED signal timer
+Description=HORST DEPLOYED Signal Timer
 
 [Timer]
 OnBootSec=45min
