@@ -13,7 +13,7 @@ Error Codes
 | HORST-8 | Can't bind to socket | Daemon was not able to bind to tcp address and port | Recheck tcp listen port and restart daemon |
 | HORST-9 | New connection error | Daemon was not able to accept new connection on tcp | Recheck tcp listen port and tcp connection and try again |
 | HORST-10 | Failed to install the horst sdbus object | Daemon was not able to fully initialize his D-Bus functionality | Make sure D-Bus is working and restart daemon |
-| HORST-11 | Failed to check LEOP status | The checkleop.sh script returned something differnt than 0 or 1 | Check script and restart daemon |
+| HORST-11 | Failed to check LEOP status | The check_leop.sh script returned something differnt than 0 or 1 | Check script and restart daemon |
 
 Configuration File
 ==================
