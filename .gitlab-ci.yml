@@ -1,5 +1,6 @@
 stages:
     - build
+    - doc
 
 .build_base: &build_base
   stage: build
@@ -12,7 +13,7 @@ stages:
   artifacts:
     paths:
       - "*.tar.gz"
-      - "deps/version_*.txt"
+      - "version_*.txt"
 
 ubuntu:
   <<: *build_base
@@ -25,3 +26,17 @@ beaglebone:
 cdh:
   <<: *build_base
   image: tum/move:cdh
+
+doc:
+  <<: *build_base
+  image: tum/move:ubuntu
+  stage: doc
+  only:
+    - master
+    - tags
+    - triggers
+  script:
+    - source cdh_utilities/run_ci_doc.sh
+  artifacts:
+    paths:
+      - "*.tar.gz"

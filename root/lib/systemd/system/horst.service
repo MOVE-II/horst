@@ -8,5 +8,10 @@ Type=dbus
 BusName=moveii.horst
 ExecStart=/opt/cdh_horst/horst -b 70 -s /opt/cdh_horst/scripts/
 
+Restart=always
+RestartSec=30
+StartLimitIntervalSec=10min
+StartLimitBurst=10
+
 [Install]
 WantedBy=MOVEII.target
