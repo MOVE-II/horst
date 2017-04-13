@@ -10,5 +10,8 @@
   fi
 
   # All this lines will be executed on startup of horst
+  repeat 3 2 busctl --system call moveii.eps /moveii/eps moveii.eps switchOn s ADCS3V3
+  repeat 3 2 busctl --system call moveii.eps /moveii/eps moveii.eps switchOn s ADCS5V
+  sleep 5
   busctl --system call moveii.adcs /moveii/adcs moveii.adcs setMode s SLEEP
 ) &> /dev/null
