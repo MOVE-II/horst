@@ -6,4 +6,3 @@
 
 	busctl --system call moveii.horst /moveii/horst moveii.horst setManualmode s FALSE
 ) &> /dev/null
-
