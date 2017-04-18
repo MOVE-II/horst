@@ -2,6 +2,9 @@
 Description=HORST
 After=dbus.service s3tp.service eps.service adcs.service pl.service thm.service
 
+StartLimitIntervalSec=10min
+StartLimitBurst=10
+
 [Service]
 Type=dbus
 #User=misc
@@ -10,8 +13,6 @@ ExecStart=/opt/cdh_horst/horst -b 70 -s /opt/cdh_horst/scripts/
 
 Restart=always
 RestartSec=30
-StartLimitIntervalSec=10min
-StartLimitBurst=10
 
 [Install]
 WantedBy=MOVEII.target
