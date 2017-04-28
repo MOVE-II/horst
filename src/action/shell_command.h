@@ -13,6 +13,7 @@ class ControlMessage;
 class ShellCommand : public Action {
 public:
 	ShellCommand(const std::string &cmd, std::shared_ptr<ControlMessage> request=nullptr);
+	ShellCommand(const std::string &cmd, const std::string &prefix, std::shared_ptr<ControlMessage> request);
 
 	std::string describe() const override;
 	void perform(Satellite *satellite, ac_done_cb_t done) override;
@@ -26,6 +27,12 @@ protected:
 
 	/** the request that lead to the execution of this shellcommand */
 	std::shared_ptr<ControlMessage> request;
+
+	/** prefix for command to execute */
+	std::string cmdprefix;
+
+	/** Is any command prefix set? */
+	bool iscmdprefix;
 };
 
 } // horst

@@ -14,7 +14,6 @@ namespace horst {
 class S3TPServer : public S3tpCallback, public Client {
 public:
 	S3TPServer(Satellite*);
-
 	virtual ~S3TPServer();
 
 	static void on_s3tp_event(uv_poll_t *handle, int status, int events);
@@ -22,7 +21,7 @@ public:
 	/**
 	 * Start s3tp server
 	 */
-	int start(uv_loop_t*);
+	bool start(uv_loop_t*);
 
 private:
 	/**

@@ -28,7 +28,7 @@ void Client::data_received(const char *data, size_t size) {
 	}
 
 	if (strlen(data) != size) {
-		LOG_WARN("[client] Received bytes do not contain full string. Ignore!");
+		LOG_WARN("[client] Received bytes do not contain full string. Ignore! ("+std::to_string(strlen(data))+")");
 		return;
 	}
 

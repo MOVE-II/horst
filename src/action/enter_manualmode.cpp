@@ -21,6 +21,7 @@ std::string EnterManualMode::describe() const {
 
 void EnterManualMode::perform(Satellite *sat, ac_done_cb_t done) {
 	LOG_INFO("[action] Entering manual mode");
+
 	sat->on_event(std::make_shared<ManualModeSignal>(true));
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
 		if (success) {

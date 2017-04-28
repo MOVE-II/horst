@@ -3,9 +3,9 @@
 namespace horst {
 
 	S3TPServer::S3TPServer(Satellite *sat) : S3tpCallback(), Client(sat), channel(NULL) {
-		s3tpSocketPath = S3TP_SOCKETPATH;
+		s3tpSocketPath = (char*) S3TP_SOCKETPATH;
 
-		// create channel instance and default the config
+		// Create channel instance and set default config
 		this->s3tp_cfg.port = S3TP_DEFAULT_PORT; // default Local port to bind to
 		this->s3tp_cfg.options = 0;
 		this->s3tp_cfg.channel = 3; // This represents the virtual channel used by NanoLink
@@ -15,18 +15,18 @@ namespace horst {
 		uv_poll_stop(&this->connection);
 	}
 
-	void S3TPServer::on_s3tp_event(uv_poll_t *handle, int status, int events) {
-		LOG_DEBUG("horst s3tp on_s3tp_event ");
+	void S3TPServer::on_s3tp_event(uv_poll_t *handle, int, int events) {
 		S3TPServer *s3tp_link_ref = ((S3TPServer *)handle->data);
 
-		if(events & UV_READABLE){
-			s3tp_link_ref->channel->handleIncomingData();
+		if (s3tp_link_ref->channel != nullptr && events & UV_READABLE) {
+		    s3tp_link_ref->channel->handleIncomingData();
 		}
-		if(events & UV_WRITABLE){
-			s3tp_link_ref->channel->handleOutgoingData();
+		if (s3tp_link_ref->channel != nullptr && events & UV_WRITABLE) {
+		    s3tp_link_ref->channel->handleOutgoingData();
 		}
 
-		s3tp_link_ref->update_events();
+		if (s3tp_link_ref->channel != nullptr)
+		    s3tp_link_ref->update_events();
 	}
 
 	void S3TPServer::update_events() {
@@ -67,13 +67,12 @@ namespace horst {
 				this->channel = NULL;
 			}
 		} else {
-			LOG_WARN(std::string("Failed to bind to s3tp: " + std::to_string(error)));
+			LOG_WARN("[s3tp] Failed to bind to s3tp: " + std::to_string(error));
 			delete this->channel;
 			this->channel = NULL;
 		}
 
 		if (this->channel == NULL) {
-			LOG_INFO("[s3tp] Reconnect scheduled...");
 			// Regularly check connection and reconnect
 			uv_timer_start(
 				&this->timer,
@@ -86,7 +85,7 @@ namespace horst {
 				0         // don't repeat
 			);
 
-			LOG_INFO("[s3tp] Reconnect failed...");
+			LOG_WARN("[s3tp] Reconnect failed...");
 			return false;
 		} else {
 			current_events = this->channel->getActiveEvents();
@@ -106,7 +105,7 @@ namespace horst {
 		}
 	}
 
-	int S3TPServer::start(uv_loop_t *loop_ref) {
+	bool S3TPServer::start(uv_loop_t *loop_ref) {
 		this->loop = loop_ref;
 
 		uv_timer_init(this->loop, &this->timer);
@@ -115,43 +114,31 @@ namespace horst {
 		if (reconnect()) {
 			this->channel->handleIncomingData();
 			this->channel->handleOutgoingData();
-			return 0;
-		} else {
-			return 1;
+			return true;
 		}
+
+		return false;
 	}
 
-	void S3TPServer::onConnected(S3tpChannel &channel) {
-		LOG_DEBUG("horst s3tp connection is active");
+	void S3TPServer::onConnected(S3tpChannel&) {
+		LOG_DEBUG("[s3tp] Connection is active");
 	}
 
-	void S3TPServer::onDisconnected(S3tpChannel &channel, int error) {
-		LOG_WARN("S3TP onDisconnected, error=" + std::to_string(error));
+	void S3TPServer::onDisconnected(S3tpChannel&, int error) {
+		LOG_WARN("[s3tp] S3TP disconnected with error " + std::to_string(error));
 		uv_poll_stop(&this->connection);
 		delete this->channel;
 		this->channel = NULL;
 		this->reconnect();
 	}
 
-	void S3TPServer::onDataReceived(S3tpChannel &channel, char *data, size_t len) {
-		LOG_DEBUG("Received " + std::to_string(len) + " bytes ("+std::string(data)+") over s3tp");
-
-		//Copy the data immediately, as the buffer is used by the connector and will be overwritten by the next read operation
-		char * bufferCopy = (char*) malloc(len * sizeof(char));
-		if (bufferCopy == NULL) {
-			LOG_WARN("[s3tp] Malloc for incoming data failed!");
-			return;
-		}
-		memcpy(bufferCopy, data, len + 1);
-		bufferCopy[len+1] = '\0';
-
-
+	void S3TPServer::onDataReceived(S3tpChannel&, char *data, size_t len) {
+		LOG_DEBUG("[s3tp] Received " + std::to_string(len) + " bytes ("+std::string(data)+")");
 		this->data_received(data, len);
-		free(bufferCopy);
 	}
 
 	void S3TPServer::send(const char* msg, size_t len) {
-		LOG_DEBUG("Sending " + std::to_string(len) + " bytes over s3tp");
+		LOG_DEBUG("[s3tp] Sending " + std::to_string(len) + " bytes");
 		this->channel->send((void*)msg, len);
 	}
 
@@ -159,16 +146,16 @@ namespace horst {
 
 	}
 
-	void S3TPServer::onBufferFull(S3tpChannel &channel) {
-		LOG_DEBUG("Buffer is full");
+	void S3TPServer::onBufferFull(S3tpChannel&) {
+		LOG_DEBUG("[s3tp] Buffer is full");
 	}
 
-	void S3TPServer::onBufferEmpty(S3tpChannel &channel) {
-		LOG_DEBUG("Buffer is empty");
+	void S3TPServer::onBufferEmpty(S3tpChannel&) {
+		LOG_DEBUG("[s3tp] Buffer is empty");
 	}
 
 	void S3TPServer::onError(int error) {
-		LOG_WARN("S3TP connection closed with error " + std::to_string(error));
+		LOG_WARN("[s3tp] connection closed with error " + std::to_string(error));
 	}
 
 } // horst
