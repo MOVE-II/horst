@@ -27,6 +27,11 @@ void Client::data_received(const char *data, size_t size) {
 		return;
 	}
 
+	if (strlen(data) != size) {
+		LOG_WARN("[client] Received bytes do not contain full string. Ignore!");
+		return;
+	}
+
 	// The following "few" lines implement in C++ what Python does:
 	//   ... buf = bytearray() ...
 	//   buf.extend(data)
@@ -48,6 +53,7 @@ void Client::data_received(const char *data, size_t size) {
 	size_t npos = buf_str.rfind(split_at);
 
 	if (npos == std::string::npos) {
+		LOG_DEBUG("No newline in '"+std::string(buf_str)+"'...");
 		// no newline found, just wait for more data.
 		return;
 	}
@@ -84,6 +90,7 @@ void Client::data_received(const char *data, size_t size) {
 		}
 		else {
 			// ignore the command.
+			LOG_DEBUG("Not a command, ignore.");
 		}
 	}
 }

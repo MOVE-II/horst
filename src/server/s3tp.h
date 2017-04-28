@@ -3,15 +3,17 @@
 #include <uv.h>
 #include <s3tp/connector/S3tpChannelEvent.h>
 
+#include "../client/client.h"
+
 #define S3TP_DEFAULT_PORT 99
 #define S3TP_SOCKETPATH "/tmp/s3tp4000"
 
 
 namespace horst {
 
-class S3TPServer : public S3tpCallback {
+class S3TPServer : public S3tpCallback, public Client {
 public:
-	S3TPServer();
+	S3TPServer(Satellite*);
 
 	virtual ~S3TPServer();
 
@@ -52,6 +54,10 @@ protected:
 	void onBufferFull(S3tpChannel &channel) override;
 	void onBufferEmpty(S3tpChannel &channel) override;
 	void onError(int error) override;
+
+	// Client methods
+	void send(const char*, size_t) override;
+	void close() override;
 };
 
 

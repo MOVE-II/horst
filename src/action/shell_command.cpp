@@ -28,7 +28,7 @@ std::string ShellCommand::describe() const {
 void ShellCommand::perform(Satellite *sat, ac_done_cb_t done) {
 	this->process = std::make_unique<Process>(
 		sat->get_loop(),
-		sat->get_scripts_path() + this->command,
+		this->command,
 		[this, done] (Process *, int64_t exit_code) {
 
 			// TODO: if we wanna provide the process' output someday,

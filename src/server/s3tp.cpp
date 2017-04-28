@@ -2,7 +2,7 @@
 
 namespace horst {
 
-	S3TPServer::S3TPServer() {
+	S3TPServer::S3TPServer(Satellite *sat) : S3tpCallback(), Client(sat) {
 		s3tpSocketPath = S3TP_SOCKETPATH;
 
 		// create channel instance and default the config
@@ -90,7 +90,7 @@ namespace horst {
 	}
 
 	void S3TPServer::onDataReceived(S3tpChannel &channel, char *data, size_t len) {
-		LOG_DEBUG("Received " + std::to_string(len) + " bytes over s3tp");
+		LOG_DEBUG("Received " + std::to_string(len) + " bytes ("+std::string(data)+") over s3tp");
 
 		//Copy the data immediately, as the buffer is used by the connector and will be overwritten by the next read operation
 		char * bufferCopy = (char*) malloc(len * sizeof(char));
@@ -98,13 +98,21 @@ namespace horst {
 			LOG_WARN("[s3tp] Malloc for incoming data failed!");
 			return;
 		}
-		memcpy(bufferCopy, data, len);
-		bufferCopy[len] = '\0';
+		memcpy(bufferCopy, data, len + 1);
+		bufferCopy[len+1] = '\0';
 
-		channel.send((void*)bufferCopy, len);
-		std::cout << bufferCopy << std::endl;
 
+		this->data_received(data, len);
 		free(bufferCopy);
+	}
+
+	void S3TPServer::send(const char* msg, size_t len) {
+		LOG_DEBUG("Sending " + std::to_string(len) + " bytes over s3tp");
+		this->channel->send((void*)msg, len);
+	}
+
+	void S3TPServer::close() {
+
 	}
 
 	void S3TPServer::onBufferFull(S3tpChannel &channel) {
