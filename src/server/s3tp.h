@@ -24,7 +24,7 @@ public:
 	 */
 	int start(uv_loop_t*);
 
-protected:
+private:
 	/**
 	 * s3tp connection configurations
 	 */
@@ -45,7 +45,17 @@ protected:
 	 */
 	uv_poll_t connection;
 
+	/**
+	 * Timer for automatic reconnect
+	 */
+	uv_timer_t timer;
+
 	void update_events();
+
+	/**
+	 * If not connected, try to re-establish
+	 */
+	bool reconnect();
 
 	// s3tp event callbacks
 	void onConnected(S3tpChannel &channel) override;

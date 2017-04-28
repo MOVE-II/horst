@@ -2,14 +2,13 @@
 
 namespace horst {
 
-	S3TPServer::S3TPServer(Satellite *sat) : S3tpCallback(), Client(sat) {
+	S3TPServer::S3TPServer(Satellite *sat) : S3tpCallback(), Client(sat), channel(NULL) {
 		s3tpSocketPath = S3TP_SOCKETPATH;
 
 		// create channel instance and default the config
 		this->s3tp_cfg.port = S3TP_DEFAULT_PORT; // default Local port to bind to
 		this->s3tp_cfg.options = 0;
 		this->s3tp_cfg.channel = 3; // This represents the virtual channel used by NanoLink
-		this->channel = new S3tpChannelEvent(this->s3tp_cfg, *this);
 	}
 
 	S3TPServer::~S3TPServer() {
@@ -43,42 +42,83 @@ namespace horst {
 		              &S3TPServer::on_s3tp_event);
 	}
 
-	int S3TPServer::start(uv_loop_t *loop_ref) {
+	bool S3TPServer::reconnect() {
 		int r = 0;
 		int error = 0;
 		int current_events = 0;
 		int s3tp_fd;
-		this->loop = loop_ref;
+
+		// Are we connected already?
+		if (this->channel != NULL) {
+			return true;
+		}
+
+		// Try to connect
+		LOG_INFO("[s3tp] Try to reconnect...");
+		this->channel = new S3tpChannelEvent(this->s3tp_cfg, *this);
 
 		//Bind channel to S3TP daemon
 		this->channel->bind(error);
-		if (error != 0) {
+		if (error == 0) {
+			r = this->channel->accept();
+			if (r < 0) {
+				LOG_WARN("[s3tp] Failed to register for s3tp events: " + std::string(strerror(-r)));
+				delete this->channel;
+				this->channel = NULL;
+			}
+		} else {
 			LOG_WARN(std::string("Failed to bind to s3tp: " + std::to_string(error)));
-			return 1;
+			delete this->channel;
+			this->channel = NULL;
 		}
 
-		r = this->channel->accept();
-		if (r < 0) {
-			LOG_WARN(std::string("Failed to register for s3tp events: " + std::string(strerror(-r))));
-			return 1;
-		}
+		if (this->channel == NULL) {
+			LOG_INFO("[s3tp] Reconnect scheduled...");
+			// Regularly check connection and reconnect
+			uv_timer_start(
+				&this->timer,
+				[] (uv_timer_t *handle) {
+					// yes, handle is not a poll_t, but
+					// we just care for its -> data member anyway.
+					((S3TPServer*) handle->data)->reconnect();
+				},
+				1 * 1000, // time in milliseconds, try to reconnect every second
+				0         // don't repeat
+			);
 
-		current_events = this->channel->getActiveEvents();
-		s3tp_fd = this->channel->getSocket()->getFileDescriptor();
+			LOG_INFO("[s3tp] Reconnect failed...");
+			return false;
+		} else {
+			current_events = this->channel->getActiveEvents();
+			s3tp_fd = this->channel->getSocket()->getFileDescriptor();
 
-		// initialize the s3tp fd events polling object
-		uv_poll_init(this->loop, &this->connection, s3tp_fd);
+			// initialize the s3tp fd events polling object
+			uv_poll_init(this->loop, &this->connection, s3tp_fd);
 
-		// make `this` reachable in event loop callbacks.
-		this->connection.data = this;
-		uv_poll_start(&this->connection,
+			// make `this` reachable in event loop callbacks.
+			this->connection.data = this;
+			uv_poll_start(&this->connection,
 		              UV_READABLE | UV_WRITABLE | UV_DISCONNECT,
 		              &S3TPServer::on_s3tp_event);
 
-		this->channel->handleIncomingData();
-		this->channel->handleOutgoingData();
+			LOG_INFO("[s3tp] Reconnect succeeded...");
+			return true;
+		}
+	}
 
-		return 0;
+	int S3TPServer::start(uv_loop_t *loop_ref) {
+		this->loop = loop_ref;
+
+		uv_timer_init(this->loop, &this->timer);
+		this->timer.data = this;
+
+		if (reconnect()) {
+			this->channel->handleIncomingData();
+			this->channel->handleOutgoingData();
+			return 0;
+		} else {
+			return 1;
+		}
 	}
 
 	void S3TPServer::onConnected(S3tpChannel &channel) {
@@ -87,6 +127,10 @@ namespace horst {
 
 	void S3TPServer::onDisconnected(S3tpChannel &channel, int error) {
 		LOG_WARN("S3TP onDisconnected, error=" + std::to_string(error));
+		uv_poll_stop(&this->connection);
+		delete this->channel;
+		this->channel = NULL;
+		this->reconnect();
 	}
 
 	void S3TPServer::onDataReceived(S3tpChannel &channel, char *data, size_t len) {
@@ -125,7 +169,6 @@ namespace horst {
 
 	void S3TPServer::onError(int error) {
 		LOG_WARN("S3TP connection closed with error " + std::to_string(error));
-		// TODO: reconnect after some timer!
 	}
 
 } // horst
