@@ -274,6 +274,12 @@ static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_METHOD("checkDaemon", "", "q", checkDaemon, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("checkHardware", "", "q", checkHardware, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("getVersion", "", "s", getVersion, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_SIGNAL("adcsStateReached", "s", 0),
+	SD_BUS_SIGNAL("payloadConditionsFulfilled", "", 0),
+	SD_BUS_SIGNAL("payloadMeasurementDone", "", 0),
+	SD_BUS_SIGNAL("leopStateChange", "s", 0),
+	SD_BUS_SIGNAL("epsChargeStateChange", "q", 0),
+	SD_BUS_SIGNAL("thmStateChange", "s", 0),
 	SD_BUS_VTABLE_END
 };
 
