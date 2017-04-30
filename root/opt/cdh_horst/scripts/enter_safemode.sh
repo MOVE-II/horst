@@ -3,21 +3,20 @@
 # ADCS off, PL off, GPS off, S-Band off
 
 (
+  REPEATS=3
+  SHORTWAIT=1
+  LONGWAIT=2
 
 	systemctl stop pl.service
-	sleep 5
-	repeat 3 2 busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s PLTHM
+	sleep $LONGWAIT
+	repeat $REPEATS $SHORTWAIT busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s PLTHM
 
-	sleep 5
+	repeat $REPEATS $SHORTWAIT busctl --system call moveii.adcs /moveii/adcs moveii.adcs setMode s SLEEP
+	sleep $LONGWAIT
+	repeat $REPEATS $SHORTWAIT busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s ADCS5V
+	repeat $REPEATS $SHORTWAIT busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s ADCS3V3
 
-	busctl --system call moveii.adcs /moveii/adcs moveii.adcs setMode s SLEEP
-	sleep 5
-	repeat 3 2 busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s ADCS5V
-	repeat 3 2 busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s ADCS3V3
-
-	sleep 5
-
-	repeat 3 2 busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s SBAND
+	repeat $REPEATS $SHORTWAIT busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s SBAND
 
 	systemctl stop gps_active.service
 
