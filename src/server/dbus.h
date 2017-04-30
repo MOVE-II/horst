@@ -46,6 +46,11 @@ protected:
 	 */
 	void watch_for_signals();
 
+	/**
+	 * Handle all available dbus requests
+	 */
+	void handle_dbus();
+
 	Satellite *satellite;
 	uv_loop_t *loop;
 

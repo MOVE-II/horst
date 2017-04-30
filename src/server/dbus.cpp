@@ -21,14 +21,8 @@
 
 namespace horst {
 
-/*
- * callback method used by libuv to notify when
- * dbus messages can be processed
- */
-static void on_dbus_ready(uv_poll_t *handle, int /*status*/, int /*events*/) {
-	DBusConnection *connection = (DBusConnection *)handle->data;
-
-	sd_bus *bus = connection->get_bus();
+void DBusConnection::handle_dbus() {
+	sd_bus *bus = this->get_bus();
 
 	// let dbus handle the requests available
 	while (true) {
@@ -48,7 +42,7 @@ static void on_dbus_ready(uv_poll_t *handle, int /*status*/, int /*events*/) {
 	}
 
 	// update the events we watch for on the socket.
-	connection->update_events();
+	this->update_events();
 }
 
 
@@ -82,7 +76,7 @@ void DBusConnection::update_events() {
 			[] (uv_timer_t *handle) {
 				// yes, handle is not a poll_t, but
 				// we just care for its -> data member anyway.
-				on_dbus_ready((uv_poll_t *)handle, 0, 0);
+				((DBusConnection*) handle->data)->handle_dbus();
 			},
 			usec / 1000, // time in milliseconds, sd_bus provides µseconds
 			0            // don't repeat
@@ -92,9 +86,10 @@ void DBusConnection::update_events() {
 	// always watch for disconnects:
 	new_events |= UV_DISCONNECT;
 
-	// activate the socket watching,
-	// and if active, invoke the callback function
-	uv_poll_start(&this->connection, new_events, &on_dbus_ready);
+	// activate the socket watching and if active, handle dbus
+	uv_poll_start(&this->connection, new_events, [](uv_poll_t *handle, int, int) {
+	    ((DBusConnection*) handle->data)->handle_dbus();
+	});
 }
 
 
@@ -279,6 +274,12 @@ static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_METHOD("checkDaemon", "", "q", checkDaemon, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("checkHardware", "", "q", checkHardware, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("getVersion", "", "s", getVersion, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_SIGNAL("adcsStateReached", "s", 0),
+	SD_BUS_SIGNAL("payloadConditionsFulfilled", "", 0),
+	SD_BUS_SIGNAL("payloadMeasurementDone", "", 0),
+	SD_BUS_SIGNAL("leopStateChange", "s", 0),
+	SD_BUS_SIGNAL("epsChargeStateChange", "q", 0),
+	SD_BUS_SIGNAL("thmStateChange", "s", 0),
 	SD_BUS_VTABLE_END
 };
 
@@ -331,7 +332,7 @@ int DBusConnection::connect() {
 
 	// process initial events and set up the
 	// events and timers for subsequent calls
-	on_dbus_ready(&this->connection, 0, 0);
+	this->handle_dbus();
 
 	LOG_DEBUG("[dbus] Listener initialized");
 	return 0;
