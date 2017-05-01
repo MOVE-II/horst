@@ -23,12 +23,20 @@ std::string EnterSafeMode::describe() const {
 void EnterSafeMode::perform(Satellite *sat, ac_done_cb_t done) {
 	LOG_INFO("[action] Entering safemode");
 
+	// Set safemode to true first, to not reenter it multiple times in a
+	// loop
+	sat->on_event(std::make_shared<SafeModeSignal>(true));
+
 	// Always deactivate maneuvermode
 	sat->on_event(std::make_shared<ManeuverModeSignal>(false));
 
-	sat->on_event(std::make_shared<SafeModeSignal>(true));
 	ShellCommand::perform(sat, [sat, done] (bool success, Action *action) {
-		LOG_INFO("[action] Safemode was entered");
+		if (success) {
+			LOG_INFO("[action] Safemode was entered");
+		} else {
+			LOG_WARN("[action] Failed to enter safemode!");
+			sat->on_event(std::make_shared<SafeModeSignal>(false));
+		}
 		done(success, action);
 	});
 }
