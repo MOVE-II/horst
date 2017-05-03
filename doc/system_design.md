@@ -1,6 +1,7 @@
 # System Design
 
-Horst is the brain of the satellite.
+Horst is the brain of the satellite, keeps track of a global state and reacts
+on critical states by shutting off systems to safe battery.
 
 It keeps in internal state of the satellite and updates it on incoming signals
 broadcasted by other daemons.
@@ -15,18 +16,23 @@ Available states
 |-------|--------|---------|-------------|
 | manualmode | true/false | false | This toggles the logic of horst on/off to allow operators to disable horst for up to 30min. After this it will return to non-safemode automatically |
 | safemode | true/false | false | If this is true the satellite is run in an energy saving mode |
-| battery | Remaining voltage in 0.01% | T | Remaining voltage of our battery |
-| temperature | ok, warn, alarm | warn | The temperature status of our whole satellite |
-| ADCS pointing | \* | none | The currently achieved mode of the ADCS |
-| ADCS pointing requested | \* | none | The currently requested mode of the ADCS |
-| Payload | off, idle, wantmeasure, measuring | off | The current status of the payload daemon |
-| LEOP | undeployed, deployed, done | done | The status of the LEOP sequence, we are currently in |
+| maneuvermode | true/false | false | If this is true the rules for setting ADCS mode to sun pointing will be deactivated |
+| battery | Remaining voltage in percent | T | Remaining voltage of our battery |
+| temperature | OK, WARN, ALARM | WARN | The temperature status of our whole satellite |
+| ADCS pointing | \* | NONE | The currently achieved mode of the ADCS |
+| ADCS pointing requested | \* | NONE | The currently requested mode of the ADCS |
+| Payload | OFF, IDLE, WANTMEASURE, MEASURING | OFF | The current status of the payload daemon |
+| LEOP | UNDEPLOYED, DEPLOYED, DONE | DEPLOYED | The status of the LEOP sequence, we are currently in |
 
-\* Values for ADCS: none, sleep, attdet, detumb, nadir, sun, flash, exp
+\* Values for ADCS: NONE, SLEEP, ATTDET, DETUMB, NADIR, SUN, FLASH, EXP
 
 All states can be changed by sending horst a signal with a new current value
 or in some cases by a request (e.g. safemode and manual mode).
 This will be done by the other daemons or requested by the ground station.
+
+On startup HORST has no clue about the actual state of the satellite. It
+therefore assumes the documented default values for operation until an update
+with real data is received by signal.
 
 Resulting actions
 -----------------
