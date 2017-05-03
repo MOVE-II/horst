@@ -19,6 +19,7 @@ Satellite::Satellite(const arguments &args)
 
 	this->current_state.manualmode = args.startmanual;
 	this->current_state.battery_treshold = args.battery_treshold;
+	this->current_state.eps.battery_level = args.battery_treshold;
 	this->current_state.leop = args.leop;
 	uv_loop_init(&this->loop);
 }
