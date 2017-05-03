@@ -1,14 +1,24 @@
 #!/bin/bash
 
 (
+  REPEATS=3
+  SHORTWAIT=1
+  LONGWAIT=2
+
   script_full_path=$(dirname "$0")
   if /bin/bash "$script_full_path/check_leop.sh"; then
     # LEOP is done
 
     # Switch on PL
-    repeat 3 2 busctl --system call moveii.eps /moveii/eps moveii.eps switchOn s PLTHM
+    repeat $REPEATS $SHORTWAIT busctl --system call moveii.eps /moveii/eps moveii.eps switchOn s PLTHM
+
+    # This is automatically done by the SCIOPS.target:
+    # systemctl start pl.service
   fi
 
-  # All this lines will be executed on startup of horst
-  busctl --system call moveii.adcs /moveii/adcs moveii.adcs setMode s SLEEP
+  # All these lines will be executed on startup of horst
+  repeat $REPEATS $SHORTWAIT busctl --system call moveii.eps /moveii/eps moveii.eps switchOn s ADCS3V3
+  repeat $REPEATS $SHORTWAIT busctl --system call moveii.eps /moveii/eps moveii.eps switchOn s ADCS5V
+  sleep $LONGWAIT
+  repeat $REPEATS $SHORTWAIT busctl --system call moveii.adcs /moveii/adcs moveii.adcs setMode s SLEEP
 ) &> /dev/null
