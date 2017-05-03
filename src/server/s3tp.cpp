@@ -3,7 +3,7 @@
 
 namespace horst {
 
-	S3TPServer::S3TPServer(Satellite *sat) : S3tpCallback(), Client(sat), channel(NULL) {
+	S3TPServer::S3TPServer(Satellite *sat) : S3tpCallback(), Client(sat) {
 		s3tpSocketPath = (char*) S3TP_SOCKETPATH;
 
 		// Create channel instance and set default config
@@ -56,7 +56,7 @@ namespace horst {
 
 		// Try to connect
 		LOG_INFO("[s3tp] Try to reconnect...");
-		this->channel = new S3tpChannelEvent(this->s3tp_cfg, *this);
+		this->channel = std::make_unique<S3tpChannelEvent>(this->s3tp_cfg, *this);
 
 		//Bind channel to S3TP daemon
 		this->channel->bind(error);
@@ -64,12 +64,10 @@ namespace horst {
 			r = this->channel->accept();
 			if (r < 0) {
 				LOG_WARN("[s3tp] Failed to register for s3tp events: " + std::string(strerror(-r)));
-				delete this->channel;
 				this->channel = NULL;
 			}
 		} else {
 			LOG_WARN("[s3tp] Failed to bind to s3tp: " + std::to_string(error));
-			delete this->channel;
 			this->channel = NULL;
 		}
 
@@ -98,7 +96,7 @@ namespace horst {
 			// make `this` reachable in event loop callbacks.
 			this->connection.data = this;
 			uv_poll_start(&this->connection,
-		              UV_READABLE | UV_WRITABLE | UV_DISCONNECT,
+		              UV_READABLE | UV_DISCONNECT,
 		              &S3TPServer::on_s3tp_event);
 
 			LOG_INFO("[s3tp] Reconnect succeeded...");
@@ -112,13 +110,7 @@ namespace horst {
 		uv_timer_init(this->loop, &this->timer);
 		this->timer.data = this;
 
-		if (reconnect()) {
-			this->channel->handleIncomingData();
-			this->channel->handleOutgoingData();
-			return true;
-		}
-
-		return false;
+		return reconnect();
 	}
 
 	void S3TPServer::onConnected(S3tpChannel&) {
@@ -128,7 +120,6 @@ namespace horst {
 	void S3TPServer::onDisconnected(S3tpChannel&, int error) {
 		LOG_WARN("[s3tp] S3TP disconnected with error " + std::to_string(error));
 		uv_poll_stop(&this->connection);
-		delete this->channel;
 		this->channel = NULL;
 		this->reconnect();
 	}

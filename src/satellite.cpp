@@ -39,7 +39,7 @@ int Satellite::run() {
 		return 1;
 	}
 
-	if (this->s3tp_link.start(&this->loop)) {
+	if (!this->s3tp_link.start(&this->loop)) {
 		LOG_ERROR(5, "[satellite] failed to listen on s3tp.");
 	}
 

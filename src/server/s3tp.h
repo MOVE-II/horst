@@ -32,7 +32,7 @@ private:
 	/**
 	 * s3tp connection handle
 	 */
-	S3tpChannelEvent *channel;
+	std::unique_ptr<S3tpChannelEvent> channel;
 
 	/**
 	 * Reference to event loop
