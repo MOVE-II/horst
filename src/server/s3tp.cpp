@@ -46,7 +46,6 @@ namespace horst {
 	bool S3TPServer::reconnect() {
 		int r = 0;
 		int error = 0;
-		int current_events = 0;
 		int s3tp_fd;
 
 		// Are we connected already?
@@ -87,7 +86,6 @@ namespace horst {
 			LOG_WARN("[s3tp] Reconnect failed...");
 			return false;
 		} else {
-			current_events = this->channel->getActiveEvents();
 			s3tp_fd = this->channel->getSocket()->getFileDescriptor();
 
 			// initialize the s3tp fd events polling object
@@ -95,9 +93,7 @@ namespace horst {
 
 			// make `this` reachable in event loop callbacks.
 			this->connection.data = this;
-			uv_poll_start(&this->connection,
-		              UV_READABLE | UV_DISCONNECT,
-		              &S3TPServer::on_s3tp_event);
+            update_events();
 
 			LOG_INFO("[s3tp] Reconnect succeeded...");
 			return true;
@@ -110,7 +106,7 @@ namespace horst {
 		uv_timer_init(this->loop, &this->timer);
 		this->timer.data = this;
 
-		return reconnect();
+        return reconnect();
 	}
 
 	void S3TPServer::onConnected(S3tpChannel&) {
