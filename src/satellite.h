@@ -7,6 +7,7 @@
 #include "client/client.h"
 #include "event/event.h"
 #include "horst.h"
+#include "logger.h"
 #include "id.h"
 #include "server/dbus.h"
 #include "server/s3tp.h"
