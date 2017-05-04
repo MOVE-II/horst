@@ -128,6 +128,7 @@ namespace horst {
 	void S3TPServer::send(const char* msg, size_t len) {
 		LOG_DEBUG("[s3tp] Sending " + std::to_string(len) + " bytes");
 		this->channel->send((void*)msg, len);
+        update_events();
 	}
 
 	void S3TPServer::close() {
