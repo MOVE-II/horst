@@ -34,7 +34,7 @@ int Satellite::run() {
 	LOG_INFO("[satellite] starting up connections...");
 	int ret;
 
-	if (!this->dbus.connect()) {
+	if (this->dbus.connect()) {
 		LOG_ERROR(4, "[satellite] failed to listen on dbus.");
 		return 1;
 	}
