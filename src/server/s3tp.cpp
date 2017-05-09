@@ -21,14 +21,14 @@ namespace horst {
 		S3TPServer *s3tp_link_ref = ((S3TPServer *)handle->data);
 
 		if (s3tp_link_ref->channel != nullptr && events & UV_READABLE) {
-		    s3tp_link_ref->channel->handleIncomingData();
+			s3tp_link_ref->channel->handleIncomingData();
 		}
 		if (s3tp_link_ref->channel != nullptr && events & UV_WRITABLE) {
-		    s3tp_link_ref->channel->handleOutgoingData();
+			s3tp_link_ref->channel->handleOutgoingData();
 		}
 
 		if (s3tp_link_ref->channel != nullptr)
-		    s3tp_link_ref->update_events();
+			s3tp_link_ref->update_events();
 	}
 
 	void S3TPServer::update_events() {
@@ -53,6 +53,9 @@ namespace horst {
 		if (this->channel != NULL) {
 			return true;
 		}
+
+		// Reset internal client state
+		this->reset();
 
 		// Try to connect
 		LOG_INFO("[s3tp] Try to reconnect...");
@@ -94,7 +97,7 @@ namespace horst {
 
 			// make `this` reachable in event loop callbacks.
 			this->connection.data = this;
-            update_events();
+			update_events();
 
 			LOG_INFO("[s3tp] Reconnect succeeded...");
 			return true;
@@ -107,7 +110,7 @@ namespace horst {
 		uv_timer_init(this->loop, &this->timer);
 		this->timer.data = this;
 
-        return reconnect();
+		return reconnect();
 	}
 
 	void S3TPServer::onConnected(S3tpChannel&) {
@@ -129,11 +132,14 @@ namespace horst {
 	void S3TPServer::send(const char* msg, size_t len) {
 		LOG_DEBUG("[s3tp] Sending " + std::to_string(len) + " bytes");
 		this->channel->send((void*)msg, len);
-        update_events();
+		update_events();
 	}
 
 	void S3TPServer::close() {
-
+		LOG_DEBUG("[s3tp] Connection closed by internal client");
+		uv_poll_stop(&this->connection);
+		this->channel = NULL;
+		this->reconnect();
 	}
 
 	void S3TPServer::onBufferFull(S3tpChannel&) {

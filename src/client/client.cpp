@@ -12,12 +12,11 @@
 
 namespace horst {
 
-Client::Client(Satellite *satellite, close_cb_t on_close)
+Client::Client(Satellite *satellite)
 	:
 	satellite{satellite},
 	buf{std::make_unique<char[]>(this->max_buf_size)},
-	buf_used{0},
-	on_close{on_close} {}
+	buf_used{0} {}
 
 
 void Client::data_received(const char *data, size_t size) {
@@ -27,7 +26,7 @@ void Client::data_received(const char *data, size_t size) {
 		return;
 	}
 
-	if (strlen(data) != size) {
+	if (strlen(data) < size) {
 		LOG_WARN("[client] Received bytes do not contain full string. Ignore! ("+std::to_string(strlen(data))+")");
 		return;
 	}
@@ -103,16 +102,9 @@ void Client::send(const std::string &text) {
 	this->send(text.c_str(), text.size());
 }
 
-
-void Client::call_on_close(close_cb_t on_close) {
-	this->on_close = on_close;
-}
-
-
-void Client::closed() {
-	if (this->on_close) {
-		this->on_close(this);
-	}
+void Client::reset() {
+	this->buf = std::make_unique<char[]>(this->max_buf_size);
+	this->buf_used = 0;
 }
 
 
