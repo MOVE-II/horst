@@ -46,7 +46,7 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) {
 	/* Enter safemode in emergency case */
 	if ((this->thm.all_temp == THM::overall_temp::ALARM or
 	     this->eps.battery_level < this->battery_treshold) and
-	    this->safemode == false) {
+	    this->safemode == false and this->manualmode == false) {
 		ret.push_back(std::make_unique<EnterSafeMode>());
 	}
 
