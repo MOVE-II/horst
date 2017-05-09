@@ -1,13 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <s3tp/core/Logger.h>
 #include <unordered_map>
 #include <uv.h>
 
 #include "client/client.h"
 #include "event/event.h"
 #include "horst.h"
-#include "logger.h"
 #include "id.h"
 #include "server/dbus.h"
 #include "server/s3tp.h"

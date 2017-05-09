@@ -1,5 +1,6 @@
 #include "state.h"
 
+#include <s3tp/core/Logger.h>
 #include <stdexcept>
 
 #include "../action/enter_manualmode.h"
@@ -10,7 +11,6 @@
 #include "../action/trigger_sunpointing.h"
 #include "../action/trigger_detumbling.h"
 #include "../action/trigger_measuring.h"
-#include "../logger.h"
 #include "../util.h"
 
 namespace horst {

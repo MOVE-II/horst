@@ -1,6 +1,7 @@
 #include "thm.h"
 
-#include "../logger.h"
+#include <s3tp/core/Logger.h>
+
 #include "../util.h"
 
 namespace horst {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <uv.h>
 #include <s3tp/connector/S3tpChannelEvent.h>
+#include <uv.h>
 
 #include "../client/client.h"
 
