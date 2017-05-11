@@ -4,11 +4,11 @@
 
 namespace horst {
 
-	S3TPServer::S3TPServer(Satellite *sat) : S3tpCallback(), Client(sat) {
-		s3tpSocketPath = (char*) S3TP_SOCKETPATH;
+	S3TPServer::S3TPServer(Satellite *sat, int port, std::string socketpath) : S3tpCallback(), Client(sat) {
+		s3tpSocketPath = strdup(socketpath.c_str());
 
 		// Create channel instance and set default config
-		this->s3tp_cfg.port = S3TP_DEFAULT_PORT; // default Local port to bind to
+		this->s3tp_cfg.port = port; // default Local port to bind to
 		this->s3tp_cfg.options = 0;
 		this->s3tp_cfg.channel = 3; // This represents the virtual channel used by NanoLink
 	}
@@ -131,6 +131,7 @@ namespace horst {
 
 	void S3TPServer::send(const char* msg, size_t len) {
 		LOG_DEBUG("[s3tp] Sending " + std::to_string(len) + " bytes");
+		this->channel->send((void*)&len, sizeof(len));
 		this->channel->send((void*)msg, len);
 		update_events();
 	}

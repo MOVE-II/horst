@@ -12,7 +12,7 @@ Satellite::Satellite(const arguments &args)
 	:
 	args{args},
 	loop{},
-	s3tp_link{this},
+	s3tp_link{this, args.port, args.socketpath},
 	dbus{this},
 	next_id{0}
 	{

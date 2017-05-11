@@ -5,18 +5,15 @@
 
 #include "../client/client.h"
 
-#define S3TP_DEFAULT_PORT 99
-#define S3TP_SOCKETPATH "/tmp/s3tp4000"
-
 
 namespace horst {
 
 class S3TPServer : public S3tpCallback, public Client {
 public:
-	S3TPServer(Satellite*);
+	S3TPServer(Satellite*, int, std::string);
 	virtual ~S3TPServer();
 
-	static void on_s3tp_event(uv_poll_t *handle, int status, int events);
+	static void on_s3tp_event(uv_poll_t*, int, int);
 
 	/**
 	 * Start s3tp server
