@@ -51,7 +51,7 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) {
 	}
 
 	/* Handle requests for entering/leaving safemode */
-	if (target.safemode && !this->safemode) {
+	if (target.safemode && (!this->safemode || target.enforced_safemode)) {
 		/* Go to safemode */
 		ret.push_back(std::make_unique<EnterSafeMode>());
 	} else if (!target.safemode && this->safemode) {
