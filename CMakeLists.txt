@@ -77,6 +77,7 @@ add_executable(horst
 
 target_link_libraries(horst uv)
 target_link_libraries(horst systemd)
+target_link_libraries(horst systemd++)
 target_link_libraries(horst dl)
 target_link_libraries(horst ${S3TP_LIBRARY})
 
