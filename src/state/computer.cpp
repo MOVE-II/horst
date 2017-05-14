@@ -21,6 +21,7 @@ Computer::transform_to(const Computer &target) const {
 		ret.push_back(
 			std::make_unique<ShellCommand>(
 				std::get<0>(cmd_request),  // the command
+				"",
 				std::get<1>(cmd_request)   // the request
 			)
 		);

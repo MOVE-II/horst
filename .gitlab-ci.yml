@@ -6,7 +6,7 @@ stages:
   stage: build
   before_script:
     - git clone http://gitlab-ci-token:${CI_BUILD_TOKEN}@gitlab.lrz.de/move-ii/cdh_utilities.git
-    - DEPENDENCIES=(cdh_s3tp)
+    - DEPENDENCIES=(cdh_s3tp cdh_systemd-cpp)
     - CMAKELISTS=(CMakeLists.txt)
   script:
     - source cdh_utilities/run_ci_cmake.sh

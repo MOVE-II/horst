@@ -2,8 +2,8 @@
 
 #include <iostream>
 #include <cstring>
+#include <s3tp/core/Logger.h>
 
-#include "logger.h"
 
 namespace horst {
 

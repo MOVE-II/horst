@@ -12,7 +12,7 @@ Satellite::Satellite(const arguments &args)
 	:
 	args{args},
 	loop{},
-	s3tp_link{},
+	s3tp_link{this, args.port, args.socketpath},
 	dbus{this},
 	next_id{0}
 	{
@@ -40,11 +40,9 @@ int Satellite::run() {
 		return 1;
 	}
 
-	/*
-	if (this->s3tp_link.initiate((uint8_t)this->args.port, &this->loop)) {
+	if (!this->s3tp_link.start(&this->loop)) {
 		LOG_ERROR(5, "[satellite] failed to listen on s3tp.");
 	}
-	*/
 
 	// let the event loop run forever.
 	LOG_INFO("[satellite] Starting event loop");

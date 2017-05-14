@@ -13,10 +13,14 @@ set(CMAKE_CXX_COMPILER clang++)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+
 find_package(s3tp REQUIRED)
 include_directories(${S3TP_INCLUDE_DIRS})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic") # -fsanitize=address,undefined")
+find_library(systemd systemd)
+find_library(systemd++ systemd++)
+
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 
@@ -76,15 +80,11 @@ add_executable(horst
 )
 
 target_link_libraries(horst uv)
-target_link_libraries(horst systemd)
 target_link_libraries(horst dl)
+target_link_libraries(horst ${systemd} ${systemd++})
 target_link_libraries(horst ${S3TP_LIBRARY})
 
-install(
-	TARGETS horst
-	RUNTIME
-	DESTINATION bin
-)
+install(TARGETS horst RUNTIME DESTINATION bin)
 
 # doxygen build
 set(DOXYGEN_TARGETS horst)

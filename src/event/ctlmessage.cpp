@@ -1,6 +1,7 @@
 #include "ctlmessage.h"
 
-#include "../logger.h"
+#include <s3tp/core/Logger.h>
+
 #include "req_daemon_control.h"
 #include "req_shell_command.h"
 

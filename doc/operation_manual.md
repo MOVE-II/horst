@@ -27,9 +27,10 @@ All parameters have abbreviations with only their first character.
 
 | Parameter            | Default value | Value |
 |----------------------|---------------|-------|
-| --battery <treshold> | 5000          | Battery treshold. If battery level fall below, we will go into safemode |
+| --battery <treshold> | 70            | Battery treshold. If battery level fall below, we will go into safemode |
 | --scripts <path>     | ./scripts/    | Path to scripts directory |
-| --port <port>        | 9001          | Listen port for S3TP |
+| --port <port>        | 99            | Listen port for S3TP |
+| --socket <path>      | /tmp/s3tp99   | Socket path for S3TP |
 | --manual             | false         | Start HORST in manual mode |
 | --help               | -             | Print short help |
 
@@ -72,3 +73,26 @@ current state table accordingly.
 | payloadConditionsFullfilled | Update payload state |
 | payloadMeasurementDone | Update payload state |
 | adcsStateChange | Update adcs pointing state |
+
+S3TP Interface
+--------------
+
+You can interact with HORST over S3TP.
+The default socket path and S3TP port number can be changed over command
+line parameters, as documented above.
+
+Over the S3TP interface, arbitrary shell commands can be executed on the
+satellite. The returned value (string) will show success or failure of the
+command execution.
+
+Every command must be proceeded by an "exec " and ends with a newline.
+It may not be longer than 4096 bytes in total (hardcoded buffer size for
+incoming data over S3TP).
+
+E.g. a valid command would be:
+```sh
+exec ls\n
+```
+
+Returned will be an unsigned long integer (size_t) representing the number
+of bytes following as char array (ASCII).

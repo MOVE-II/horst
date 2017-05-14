@@ -18,10 +18,7 @@ class Client {
 	static constexpr size_t max_buf_size = 4096;
 
 public:
-	using close_cb_t = std::function<void(Client *)>;
-
-
-	Client(Satellite *satellite, close_cb_t close=nullptr);
+	Client(Satellite *satellite);
 
 	Client(Client &&other) = delete;
 	Client &operator =(Client &&other) = delete;
@@ -51,14 +48,11 @@ public:
 	/** close the connection */
 	virtual void close() = 0;
 
-	/** set a new callback that is called when closing */
-	void call_on_close(close_cb_t on_close);
-
 protected:
 	/**
-	 * Called when the connection actually closed.
+	 * Reset internal status for new connection (clean buffers)
 	 */
-	void closed();
+	void reset();
 
 	/** Satellite the client connected to */
 	Satellite *satellite;
@@ -68,12 +62,6 @@ protected:
 
 	/** position in the read buffer */
 	size_t buf_used;
-
-	/**
-	 * called when the connection was closed
-	 * or failed in the first place
-	 */
-	close_cb_t on_close;
 };
 
 } // horst
