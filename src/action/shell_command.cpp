@@ -15,7 +15,18 @@ ShellCommand::ShellCommand(const std::string &cmd, std::shared_ptr<ControlMessag
 	:
 	process{nullptr},
 	command{cmd},
-	request{request} {}
+	request{request},
+	cmdprefix{""},
+	iscmdprefix{false} {}
+
+ShellCommand::ShellCommand(const std::string &cmd, const std::string &prefix,
+	    std::shared_ptr<ControlMessage> request)
+	:
+	process{nullptr},
+	command{cmd},
+	request{request},
+	cmdprefix{prefix},
+	iscmdprefix{true} {}
 
 
 std::string ShellCommand::describe() const {
@@ -24,11 +35,17 @@ std::string ShellCommand::describe() const {
 	return ss.str();
 }
 
-
 void ShellCommand::perform(Satellite *sat, ac_done_cb_t done) {
+
+	// Set default cmdprefix
+	if (!this->iscmdprefix) {
+		this->cmdprefix = sat->get_scripts_path();
+		this->iscmdprefix = true;
+	}
+
 	this->process = std::make_unique<Process>(
 		sat->get_loop(),
-		sat->get_scripts_path() + this->command,
+		this->cmdprefix + this->command,
 		[this, done] (Process *, int64_t exit_code) {
 
 			// TODO: if we wanna provide the process' output someday,

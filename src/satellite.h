@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <s3tp/core/Logger.h>
 #include <unordered_map>
 #include <uv.h>
 

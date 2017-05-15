@@ -35,7 +35,7 @@ void show_help(const char *progname) {
 	std::cout << "horst\n"
 	          << "MOVE-II satellite manager\n"
 	          << "\n"
-	          << "usage: " << progname << "[-b|--battery=TRESHOLD] [-h|--help] [-m|--manual] [-p|--port=LISTENPORT] [-s|--scripts=PATH]\n"
+	          << "usage: " << progname << "[-b|--battery=TRESHOLD] [-h|--help] [-m|--manual] [-p|--port=LISTENPORT] [-S|--socket=SOCKETPATH] [-s|--scripts=PATH]\n"
 	          << std::endl;
 }
 
@@ -52,6 +52,7 @@ arguments parse_args(int argc, char **argv) {
 			{"manual",  no_argument,       0, 'm'},
 			{"port",    required_argument, 0, 'p'},
 			{"scripts", required_argument, 0, 's'},
+			{"socket",  required_argument, 0, 'S'},
 			{0,         0,                 0,  0 }
 		};
 
@@ -85,6 +86,10 @@ arguments parse_args(int argc, char **argv) {
 
 		case 's':
 			args.scripts = optarg;
+			break;
+
+		case 'S':
+			args.socketpath = optarg;
 			break;
 
 		case '?':
