@@ -37,7 +37,10 @@ protected:
 	 */
 	void exited();
 
+	/** Process handle */
 	uv_process_t handle;
+
+	/** Options for spawned process */
 	uv_process_options_t options;
 
 	/** command that is run by this process */
@@ -48,6 +51,16 @@ protected:
 
 	/** process exit code. is -1 if the processes did not exit yet. */
 	int64_t exit_code;
+
+	/** Pipe for IPC to child process */
+	uv_pipe_t apipe;
+	std::string output;
+
+	/** Callback for pipe to read output */
+	static void read_apipe(uv_stream_t*, ssize_t, const uv_buf_t*);
+
+	/** Callback for pipe to allocate buffer */
+	static void alloc_buffer(uv_handle_t*, size_t, uv_buf_t*);
 };
 
 } // horst

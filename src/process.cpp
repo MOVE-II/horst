@@ -13,6 +13,7 @@ Process::Process(uv_loop_t *loop, const std::string &cmd,
 	cmd{cmd},
 	on_exit{on_exit},
 	exit_code{-1} {
+	int r;
 
 	LOG_INFO("[process] created for '"+ std::string(cmd) +"'");
 
@@ -53,7 +54,16 @@ Process::Process(uv_loop_t *loop, const std::string &cmd,
 	this->options.file = "sh";
 	this->options.args = args_cpy;
 
-	int r;
+	uv_pipe_init(loop, &this->apipe, 1);
+
+	uv_stdio_container_t child_stdio[3];
+	this->options.stdio_count = 3;
+	child_stdio[0].flags = UV_IGNORE;
+	child_stdio[1].flags = (uv_stdio_flags) (UV_CREATE_PIPE | UV_WRITABLE_PIPE);
+	child_stdio[1].data.stream = (uv_stream_t *) &this->apipe;
+	child_stdio[2].flags = UV_IGNORE;
+	this->options.stdio = child_stdio;
+
 	if ((r = uv_spawn(loop, &this->handle, &this->options))) {
 		LOG_WARN("[process] failed spawning: "+ std::string(uv_strerror(r)));
 
@@ -64,12 +74,22 @@ Process::Process(uv_loop_t *loop, const std::string &cmd,
 		// dunno what happens if the spawn fails.
 
 		this->exited();
-	}
-	else {
+	} else {
+		uv_read_start((uv_stream_t*)&this->apipe, alloc_buffer, read_apipe);
 		LOG_INFO("[process] launched process with id : "+ std::to_string(this->handle.pid));
 	}
 }
 
+void Process::read_apipe(uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
+    if (nread + 1 > (ssize_t) buf->len) return;
+    buf->base[nread] = '\0';
+    fprintf(stderr, "read: |%s|", buf->base);
+}
+
+void Process::alloc_buffer(uv_handle_t*, size_t suggested_size, uv_buf_t* buf) {
+	buf->base = (char*) malloc(suggested_size);
+	buf->len = suggested_size;
+}
 
 // TODO: this could be extended to capture the output of the process
 // https://nikhilm.github.io/uvbook/processes.html#child-process-i-o
