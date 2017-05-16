@@ -7,7 +7,7 @@
 
 namespace horst {
 
-	S3TPServer::S3TPServer(Satellite *sat, int port, std::string socketpath)
+	S3TPServer::S3TPServer(int port, std::string socketpath)
 		: S3tpCallback(),
 		buf{std::make_unique<char[]>(this->max_buf_size)},
 		buf_used{0} {
@@ -205,7 +205,7 @@ namespace horst {
 	}
 
 	void S3TPServer::close() {
-		LOG_DEBUG("[s3tp] Connection closed by internal client");
+		LOG_DEBUG("[s3tp] Connection closed internally");
 		uv_poll_stop(&this->connection);
 		this->channel = NULL;
 		this->reconnect();

@@ -5,7 +5,6 @@
 #include <unordered_map>
 #include <uv.h>
 
-#include "client/client.h"
 #include "event/event.h"
 #include "horst.h"
 #include "id.h"
@@ -49,19 +48,9 @@ public:
 	uv_loop_t *get_loop();
 
 	/**
-	 * Add this client to the list.
-	 */
-	id_t add_client(std::unique_ptr<Client> &&client);
-
-	/**
 	 * Add this process to the list.
 	 */
 	id_t add_action(std::unique_ptr<Action> &&action);
-
-	/**
-	 * get a client by id.
-	 */
-	Client *get_client(id_t id);
 
 	/**
 	 * get a action by id.
@@ -84,11 +73,6 @@ public:
 	void remove_action(id_t id);
 
 	/**
-	 * Purge a given client from the active map.
-	 */
-	void remove_client(id_t id);
-
-	/**
 	 * Called from all the callbacks that receive some external event.
 	 */
 	void on_event(std::shared_ptr<Event> &&event);
@@ -105,9 +89,6 @@ private:
 
 	/** DBus connection */
 	DBusConnection dbus;
-
-	/** list of control clients connected */
-	std::unordered_map<id_t, std::unique_ptr<Client>> clients;
 
 	/** list of running actions */
 	std::unordered_map<id_t, std::unique_ptr<Action>> actions;

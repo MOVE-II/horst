@@ -3,7 +3,6 @@
 #include <s3tp/connector/S3tpChannelEvent.h>
 #include <uv.h>
 
-#include "../client/client.h"
 #include "s3tp_protocol.h"
 
 
@@ -13,7 +12,7 @@ class S3TPServer : public S3tpCallback {
 	static constexpr size_t max_buf_size = 4096;
 
 public:
-	S3TPServer(Satellite*, int, std::string);
+	S3TPServer(int, std::string);
 	virtual ~S3TPServer();
 
 	static void on_s3tp_event(uv_poll_t*, int, int);
@@ -55,7 +54,7 @@ private:
 	uv_loop_t *loop;
 
 	/**
-	 * tcp server for control clients
+	 * s3tp connection
 	 */
 	uv_poll_t connection;
 
