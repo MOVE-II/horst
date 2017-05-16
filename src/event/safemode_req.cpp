@@ -13,6 +13,7 @@ bool SafeModeReq::is_fact() const {
 
 void SafeModeReq::update(State &state) {
 	state.safemode = this->wanted;
+	state.enforced_safemode = true;
 }
 
 }  // horst

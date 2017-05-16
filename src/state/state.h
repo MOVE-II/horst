@@ -57,6 +57,12 @@ public:
 	/** safe mode is active on the satellite */
 	bool safemode;
 
+	/**
+	 * This will be set by an incoming safemode request only and will force
+	 * us to re-enter safemode, even if we are already in safemode
+	 */
+	bool enforced_safemode;
+
 	/* manual mode deactivates horst logic */
 	bool manualmode;
 
