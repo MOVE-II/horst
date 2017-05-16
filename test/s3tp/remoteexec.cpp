@@ -1,6 +1,8 @@
 #include <s3tp/connector/S3tpChannelSync.h>
 #include <fstream>
 
+#include "../../src/server/s3tp_protocol.h"
+
 const std::string SUB_COMPONENT = "S3TP";
 const bool TIMESTAMP_ENABLED = false;
 
@@ -9,44 +11,52 @@ const uint8_t PORT_LOCAL = 4000;
 char* SOCKETPATH = "/tmp/s3tp4000";
 
 
-const int bufferSize = 4096;
+const size_t bufferSize = 4096;
 char buffer[4096];
 
 bool writeData(S3tpChannel& channel, std::string line) {
+    struct horst::s3tp_horst_header header;
     size_t toWrite = 0;
-    int i = 0;
+    size_t i = 0;
 
-    int len = (int)line.length();
-    //Send length of msg
-    if (channel.send(&len, sizeof(len)) <= 0) {
+    header.length = line.length();
+    header.complete = true;
+    header.type = horst::s3tp_horst_type::SIMPLE;
+
+    // Send length of msg
+    if (channel.send(&header, sizeof(header)) <= 0) {
         return false;
     }
-    //Send msg
-    const char * data = line.data();
 
-    while (i < len) {
-        toWrite = (size_t) std::min(bufferSize, len);
+    // Send command
+    const char * data = line.data();
+    while (i < header.length) {
+        toWrite = (size_t) std::min(bufferSize, header.length);
         memcpy(buffer + i, data, toWrite);
         if (channel.send(buffer, toWrite) <= 0) {
             return false;
         }
         i += toWrite;
     }
+
     return true;
 }
 
 char * readData(S3tpChannel& channel, size_t& len) {
     char * readBuffer;
+    horst::s3tp_horst_header header;
 
-    if (channel.recv(&len, sizeof(len)) <= 0) {
+    if (channel.recv(&header, sizeof(header)) <= 0) {
         return nullptr;
     }
-    readBuffer = new char[len + 1];
-    if (channel.recv(readBuffer, (size_t)len) <= 0) {
+    readBuffer = new char[header.length + 1];
+    if (channel.recv(readBuffer, header.length) <= 0) {
         delete [] readBuffer;
         return nullptr;
     }
-    readBuffer[len] = '\0';
+    readBuffer[header.length] = '\0';
+    len = header.length;
+
     return readBuffer;
 }
 
@@ -86,7 +96,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Connection to other endpoint established" << std::endl;
 
     // Write command
-    if (!writeData(channel, "exec " + command + "\n")) {
+    if (!writeData(channel, command + "\n")) {
 	std::cerr << "An error occurred while sending data over the channel. Quitting" << std::endl;
 	return 1;
     }

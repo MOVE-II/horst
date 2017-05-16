@@ -4,11 +4,14 @@
 #include <uv.h>
 
 #include "../client/client.h"
+#include "s3tp_protocol.h"
 
 
 namespace horst {
 
-class S3TPServer : public S3tpCallback, public Client {
+class S3TPServer : public S3tpCallback {
+	static constexpr size_t max_buf_size = 4096;
+
 public:
 	S3TPServer(Satellite*, int, std::string);
 	virtual ~S3TPServer();
@@ -30,6 +33,21 @@ private:
 	 * s3tp connection handle
 	 */
 	std::unique_ptr<S3tpChannelEvent> channel;
+
+	/**
+	 * Buffer for received data
+	 */
+	std::unique_ptr<char[]> buf;
+
+	/**
+	 * Number of bytes in buffer used
+	 */
+	size_t buf_used;
+
+	/**
+	 * Protocol header of currently buffered incoming message
+	 */
+	s3tp_horst_header header;
 
 	/**
 	 * Reference to event loop
@@ -62,8 +80,8 @@ private:
 	void onError(int error) override;
 
 	// Client methods
-	void send(const char*, size_t) override;
-	void close() override;
+	void send(const char*, size_t);
+	void close();
 };
 
 
