@@ -52,9 +52,11 @@ protected:
 	/** process exit code. is -1 if the processes did not exit yet. */
 	int64_t exit_code;
 
-	/** Pipe for IPC to child process */
-	uv_pipe_t apipe;
-	std::string output;
+	/** Pipe to redirect stdout of child process */
+	uv_pipe_t pipe_stdout;
+
+	/** Pipe to redirect stderr of child process */
+	uv_pipe_t pipe_stderr;
 
 	/** Callback for pipe to allocate buffer */
 	static void alloc_buffer(uv_handle_t*, size_t, uv_buf_t*);

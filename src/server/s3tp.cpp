@@ -175,7 +175,7 @@ namespace horst {
 					satellite->on_event(std::move(cmd));
 
 					// immediately send back that the command was received.
-					this->send("ack\n", 4);
+					this->send("ack", 3);
 				} else {
 					LOG_WARN("[s3tp] Error while creating request, closing...");
 					this->close();
