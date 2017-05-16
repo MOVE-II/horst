@@ -13,7 +13,7 @@ Error Codes
 | HORST-8 | Can't bind to socket | Daemon was not able to bind to tcp address and port | Recheck tcp listen port and restart daemon |
 | HORST-9 | New connection error | Daemon was not able to accept new connection on tcp | Recheck tcp listen port and tcp connection and try again |
 | HORST-10 | Failed to install the horst sdbus object | Daemon was not able to fully initialize his D-Bus functionality | Make sure D-Bus is working and restart daemon |
-| HORST-11 | Failed to check LEOP status | The check_leop.sh script returned something differnt than 0 or 1 | Check script and restart daemon |
+| HORST-11 | Failed to check LEOP status | The check\_leop.sh script returned something differnt than 0 or 1 | Check script and restart daemon |
 
 Configuration File
 ==================
@@ -85,14 +85,26 @@ Over the S3TP interface, arbitrary shell commands can be executed on the
 satellite. The returned value (string) will show success or failure of the
 command execution.
 
-Every command must be proceeded by an "exec " and ends with a newline.
-It may not be longer than 4096 bytes in total (hardcoded buffer size for
-incoming data over S3TP).
+The easiest way to run remote commands is to use the remoteexec tool that
+can be found in /test/s3tp/. Just give your command as parameter
+and it will connect to HORST over s3tp and run your command and show
+the results.
+
+The protocol to communicate with HORST over s3tp is as follows:
+1. S3TP connection is established as normal
+2. Ground starts to send a command by sending its length as size\_t
+3. Ground sends the command itself
+4. As soon as HORST has received the expected number of bytes it will return
+   an "ack" string to notify that it has successfully received the command.
+5. HORST spawns a shell process with the given command
+6. HORST returns stdout and stderr of the process over s3tp. Always first the
+   number of bytes is send, afterwards the char array itself.
+7. On exit of the process HORST returns the exit code as "[exit] number"
+
+Every command may not be longer than 4096 bytes in total
+(hardcoded buffer size for incoming data over S3TP).
 
 E.g. a valid command would be:
 ```sh
-exec ls\n
+./remoteexec ls -l
 ```
-
-Returned will be an unsigned long integer (size_t) representing the number
-of bytes following as char array (ASCII).

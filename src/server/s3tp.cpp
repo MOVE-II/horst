@@ -135,10 +135,10 @@ namespace horst {
 		LOG_DEBUG("[s3tp] Received " + std::to_string(len) + " bytes");
 
 		// Receive header
-		if (this->header.length == 0) {
+		if (this->expected == 0) {
 			LOG_DEBUG("[s3tp] Receiving new command...");
-			const size_t headersize = sizeof(struct s3tp_horst_header);
-			std::memcpy(&this->header, data, headersize);
+			const size_t headersize = sizeof(size_t);
+			std::memcpy(&this->expected, data, headersize);
 
 			// Forward data pointer
 			data += headersize;
@@ -149,19 +149,19 @@ namespace horst {
 		if (len > 0) {
 			LOG_DEBUG("[s3tp] Receiving command data...");
 
-			if (this->buf_used + this->header.length >= this->max_buf_size) {
+			if (this->buf_used + this->expected >= this->max_buf_size) {
 				LOG_WARN("[s3tp] Receive buffer too full, closing...");
 				this->close();
 				return;
 			}
 
 			// Copy data into buffer
-			size_t ncpy = std::min(this->header.length, (this->max_buf_size - this->buf_used - 1));
+			size_t ncpy = std::min(this->expected, (this->max_buf_size - this->buf_used - 1));
 			std::memcpy(&this->buf[this->buf_used], data, ncpy);
 			this->buf[this->buf_used + ncpy] = '\0';
 			this->buf_used += ncpy;
 
-			if (this->buf_used >= this->header.length) {
+			if (this->buf_used >= this->expected) {
 
 				std::string command(this->buf.get());
 				auto cmd = std::make_unique<ShellCommandReq>(command, true);
@@ -184,7 +184,7 @@ namespace horst {
 
 				this->buf_used = 0;
 				this->buf[0] = '\0';
-				this->header.length = 0;
+				this->expected = 0;
 			}
 		}
 	}
@@ -199,11 +199,7 @@ namespace horst {
 		}
 
 		// Send header
-		s3tp_horst_header header;
-		header.length = len;
-		header.type = s3tp_horst_type::NONE;
-		header.complete = true;
-		this->channel->send((void*)&header, sizeof(header));
+		this->channel->send((void*)&len, sizeof(len));
 
 		// Send data
 		this->channel->send((void*)msg, len);

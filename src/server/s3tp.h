@@ -3,8 +3,6 @@
 #include <s3tp/connector/S3tpChannelEvent.h>
 #include <uv.h>
 
-#include "s3tp_protocol.h"
-
 
 namespace horst {
 
@@ -49,9 +47,9 @@ private:
 	size_t buf_used;
 
 	/**
-	 * Protocol header of currently buffered incoming message
+	 * Number of bytes expected for command
 	 */
-	s3tp_horst_header header;
+	size_t expected;
 
 	/**
 	 * Reference to event loop
