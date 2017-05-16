@@ -12,6 +12,13 @@ ShellCommandReq::ShellCommandReq(const std::string &command)
 	cmd{command} {}
 
 
+ShellCommandReq::ShellCommandReq(const std::string &command, bool s3tp)
+	:
+	cmd{command} {
+	this->s3tp = s3tp;
+}
+
+
 void ShellCommandReq::update(State &state) {
 	// to reach the target state, just add the shell command
 	// to the execution list.
@@ -23,5 +30,6 @@ void ShellCommandReq::update(State &state) {
 		)
 	);
 }
+
 
 } // horst

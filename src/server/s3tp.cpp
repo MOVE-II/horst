@@ -164,7 +164,7 @@ namespace horst {
 			if (this->buf_used >= this->header.length) {
 
 				std::string command(this->buf.get());
-				auto cmd = std::make_unique<ShellCommandReq>(command);
+				auto cmd = std::make_unique<ShellCommandReq>(command, true);
 				if (cmd.get() != nullptr) {
 					// handle each command in the event handler
 					cmd->call_on_complete([this] (const std::string &result) {
@@ -183,13 +183,20 @@ namespace horst {
 				}
 
 				this->buf_used = 0;
+				this->buf[0] = '\0';
 				this->header.length = 0;
 			}
 		}
 	}
 
 	void S3TPServer::send(const char* msg, size_t len) {
+		if (len == 0)
+			return;
 		LOG_DEBUG("[s3tp] Sending " + std::to_string(len) + " bytes");
+		if (!this->channel) {
+			LOG_WARN("[s3tp] Tried to send without open connection!");
+			return;
+		}
 
 		// Send header
 		s3tp_horst_header header;

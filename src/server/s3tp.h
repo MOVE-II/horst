@@ -22,6 +22,11 @@ public:
 	 */
 	bool start(uv_loop_t*);
 
+	/**
+	 * Send some data downlink
+	 */
+	void send(const char*, size_t);
+
 private:
 	/**
 	 * s3tp connection configurations
@@ -78,8 +83,6 @@ private:
 	void onBufferEmpty(S3tpChannel &channel) override;
 	void onError(int error) override;
 
-	// Client methods
-	void send(const char*, size_t);
 	void close();
 };
 

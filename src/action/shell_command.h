@@ -18,6 +18,9 @@ public:
 	std::string describe() const override;
 	void perform(Satellite *satellite, ac_done_cb_t done) override;
 
+	/** Has this been invoked over s3tp? */
+	bool is_s3tp();
+
 protected:
 	/** the running process */
 	std::unique_ptr<Process> process;

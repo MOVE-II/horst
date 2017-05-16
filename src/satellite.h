@@ -68,6 +68,11 @@ public:
 	State *get_state();
 
 	/**
+	 * Get s3tp server
+	 */
+	S3TPServer *get_s3tp();
+
+	/**
 	 * Purge a given action from the active map.
 	 */
 	void remove_action(id_t id);

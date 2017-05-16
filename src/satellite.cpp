@@ -82,6 +82,11 @@ State *Satellite::get_state() {
 }
 
 
+S3TPServer *Satellite::get_s3tp() {
+	return &this->s3tp_link;
+}
+
+
 void Satellite::remove_action(id_t id) {
 	auto pos = this->actions.find(id);
 	if (pos != std::end(this->actions)) {

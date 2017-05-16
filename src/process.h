@@ -20,7 +20,7 @@ using proc_exit_cb_t = std::function<void(Process *, int64_t)>;
  */
 class Process {
 public:
-	Process(uv_loop_t *loop, const std::string &cmd,
+	Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	        proc_exit_cb_t on_exit=nullptr);
 
 	// no moves and copies
@@ -55,9 +55,6 @@ protected:
 	/** Pipe for IPC to child process */
 	uv_pipe_t apipe;
 	std::string output;
-
-	/** Callback for pipe to read output */
-	static void read_apipe(uv_stream_t*, ssize_t, const uv_buf_t*);
 
 	/** Callback for pipe to allocate buffer */
 	static void alloc_buffer(uv_handle_t*, size_t, uv_buf_t*);

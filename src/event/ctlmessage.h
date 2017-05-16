@@ -31,6 +31,12 @@ public:
 	bool is_fact() const override;
 
 	/**
+	 * Is this a request from s3tp?
+	 * @returns false
+	 */
+	bool is_s3tp() const;
+
+	/**
 	 * install a new callback that is fired when the control message was handled.
 	 */
 	void call_on_complete(done_cb_t on_done);
@@ -44,6 +50,7 @@ public:
 protected:
 	/** callback that is triggered with the done() call above. */
 	done_cb_t on_done;
+	bool s3tp;
 };
 
 } // horst

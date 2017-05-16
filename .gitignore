@@ -21,6 +21,7 @@ __pycache__
 /bin
 /.bin
 /build
+/test/s3tp/build
 
 # CMake in-source builds
 /DartConfiguration.tcl

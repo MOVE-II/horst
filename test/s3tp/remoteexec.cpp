@@ -68,6 +68,8 @@ int main(int argc, char* argv[]) {
 
     std::string command = "";
     for (int i = 1; i < argc; i++) {
+	if (i > 1)
+		command += " ";
 	command += argv[i];
     }
 
@@ -84,7 +86,7 @@ int main(int argc, char* argv[]) {
     if (error != 0) {
 	std::cerr << "Couldn't bind to port " << std::to_string(PORT_LOCAL)
 	    << ", due to error " << std::to_string(error) << std::endl;
-        return 1;
+	return 1;
     }
     sleep(1);
 
