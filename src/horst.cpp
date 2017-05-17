@@ -133,7 +133,7 @@ int run(int argc, char **argv) {
 			break;
 		default:
 			// ERROR
-			LOG_ERROR(11, "Failed to check leop status!");
+			LOG_ERROR(8, "Failed to check leop status!");
 			args.leop = State::leop_seq::DEPLOYED;
 		}
 

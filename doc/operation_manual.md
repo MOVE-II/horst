@@ -9,11 +9,8 @@ Error Codes
 | HORST-4 | Failed to connect to bus | Daemon was not able to connect to D-Bus | Make sure D-Bus is available and restart daemon |
 | HORST-5 | Failed to acquire service name | Daemon was not able to acquire his service name on D-Bus | Make sure horst is only running once, there is no other service with the same D-Bus service name and restart daemon |
 | HORST-6 | Failed to add xyz match | Daemon was not able to register for named signal and will not receive updates for it | Make sure D-Bus is working properly and restart daemon |
-| HORST-7 | Can't create listen address | Listen address could not be parsed | Check tcp port and try restarting the daemon |
-| HORST-8 | Can't bind to socket | Daemon was not able to bind to tcp address and port | Recheck tcp listen port and restart daemon |
-| HORST-9 | New connection error | Daemon was not able to accept new connection on tcp | Recheck tcp listen port and tcp connection and try again |
-| HORST-10 | Failed to install the horst sdbus object | Daemon was not able to fully initialize his D-Bus functionality | Make sure D-Bus is working and restart daemon |
-| HORST-11 | Failed to check LEOP status | The check\_leop.sh script returned something differnt than 0 or 1 | Check script and restart daemon |
+| HORST-7 | Failed to install the horst sdbus object | Daemon was not able to fully initialize his D-Bus functionality | Make sure D-Bus is working and restart daemon |
+| HORST-8 | Failed to check LEOP status | The check\_leop.sh script returned something different than 0 or 1 | Check script and restart daemon |
 
 Configuration File
 ==================
@@ -86,7 +83,7 @@ satellite. The returned value (string) will show success or failure of the
 command execution.
 
 The easiest way to run remote commands is to use the remoteexec tool that
-can be found in /test/s3tp/. Just give your command as parameter
+can be found in `/test/s3tp/`. Just give your command as parameter
 and it will connect to HORST over s3tp and run your command and show
 the results.
 
