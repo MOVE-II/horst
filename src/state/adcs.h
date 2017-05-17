@@ -30,7 +30,8 @@ public:
 		NADIR,
 		SUN,
 		FLASH,
-		EXP
+		EXP,
+		TEST
 	};
 
 	/**
