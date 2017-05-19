@@ -12,7 +12,7 @@ namespace horst {
  */
 struct arguments {
 	int port = 99;
-	std::string socketpath = "/tmp/s3tp99";
+	std::string socketpath = "/run/s3tp.socket";
 	bool startmanual = false;
 	State::leop_seq leop = State::leop_seq::DONE;
 	uint16_t battery_treshold = 70;
