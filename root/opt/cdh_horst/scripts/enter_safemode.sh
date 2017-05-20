@@ -20,4 +20,6 @@
 
 	systemctl stop gps_active.service
 
+	systemctl start sleepwake.service
+
 ) &> /dev/null
