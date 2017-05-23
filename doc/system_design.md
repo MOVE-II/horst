@@ -48,12 +48,31 @@ Horst might trigger the following actions, if rules apply.
 | Trigger measuring   | trigger\_measuring.sh   | Trigger measurement by the payload daemon |
 | Trigger detumbling  | trigger\_detumbling.sh  | Trigger detumbling by the ADCS daemon |
 | Trigger sunpointing | trigger\_sunpointing.sh | Trigger sunpointing by the ADCS daemon |
+| Finish leop         | finish\_leop.sh         | Power on the payload hardware |
 
 For every action there is a corresponding script in the scripts directory
 that will be run, whenever horst triggers the action.
 Depending on the exit status of the script an internal state change might
 be triggered (e.g. we set safemode to true, if the enter\_safemode.sh
 script exists with 0).
+
+The logic table
+---------------
+
+All rules that apply will trigger their actions independant from other rules.
+
+| Name | safemode | manualmode | maneuvermode | battery | temperature | ADCS pointing | ADCS requested pointing | PL | LEOP | Action |
+| ---- | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ----- |
+| Battery low | no | no | X | <T | X | X | X | X | X | enter\_safemode.sh |
+| Temperature ALARM | no | no | X | X | == alarm | X | X | X | X | enter\_safemode.sh |
+| Safemode on (request) | no | X | X | X | X | X | X | X | X | enter\_safemode.sh |
+| Safemode off (request) | yes | X | X | X | X | X | X | X | X | leave\_safemode.sh |
+| Trigger PL measure | no | no | X | >T | ok | ==sun | == sun OR == none | != measuring | done | trigger\_measuring.sh |
+| ADCS detumbling | no | no | no | X | X | !=sun and !=detumb | !=sun and !=detumb | X | !=undeployed | trigger\_detumbling.sh |
+| ADCS sunpointing | no | no | no | X | X | | detumb | X | X | != undeployed | trigger\_sunpointing.sh |
+| Manualmode on (request) | X | no | X | X | X | X | X | X | X | enter\_manualmode.sh |
+| Manualmode off (request) | X | yes | X | X | X | X | X | X | X | leave\_manualmode.sh |
+| Leop done | X | X | X | X | X | X | X | X | != DONE | finish\_leop.sh |
 
 Algorithm
 ---------
