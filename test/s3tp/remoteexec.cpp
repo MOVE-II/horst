@@ -1,6 +1,7 @@
 #include <s3tp/connector/S3tpChannelSync.h>
 #include <fstream>
 
+
 const std::string SUB_COMPONENT = "S3TP";
 const bool TIMESTAMP_ENABLED = false;
 
@@ -9,21 +10,21 @@ const uint8_t PORT_LOCAL = 4000;
 char* SOCKETPATH = "/tmp/s3tp4000";
 
 
-const int bufferSize = 4096;
+const size_t bufferSize = 4096;
 char buffer[4096];
 
 bool writeData(S3tpChannel& channel, std::string line) {
     size_t toWrite = 0;
-    int i = 0;
+    size_t i = 0;
+    size_t len = line.length();
 
-    int len = (int)line.length();
-    //Send length of msg
+    // Send length of msg
     if (channel.send(&len, sizeof(len)) <= 0) {
         return false;
     }
-    //Send msg
-    const char * data = line.data();
 
+    // Send command
+    const char * data = line.data();
     while (i < len) {
         toWrite = (size_t) std::min(bufferSize, len);
         memcpy(buffer + i, data, toWrite);
@@ -32,6 +33,7 @@ bool writeData(S3tpChannel& channel, std::string line) {
         }
         i += toWrite;
     }
+
     return true;
 }
 
@@ -42,11 +44,12 @@ char * readData(S3tpChannel& channel, size_t& len) {
         return nullptr;
     }
     readBuffer = new char[len + 1];
-    if (channel.recv(readBuffer, (size_t)len) <= 0) {
+    if (channel.recv(readBuffer, len) <= 0) {
         delete [] readBuffer;
         return nullptr;
     }
     readBuffer[len] = '\0';
+
     return readBuffer;
 }
 
@@ -58,6 +61,8 @@ int main(int argc, char* argv[]) {
 
     std::string command = "";
     for (int i = 1; i < argc; i++) {
+	if (i > 1)
+		command += " ";
 	command += argv[i];
     }
 
@@ -74,7 +79,7 @@ int main(int argc, char* argv[]) {
     if (error != 0) {
 	std::cerr << "Couldn't bind to port " << std::to_string(PORT_LOCAL)
 	    << ", due to error " << std::to_string(error) << std::endl;
-        return 1;
+	return 1;
     }
     sleep(1);
 
@@ -86,7 +91,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Connection to other endpoint established" << std::endl;
 
     // Write command
-    if (!writeData(channel, "exec " + command + "\n")) {
+    if (!writeData(channel, command + "\n")) {
 	std::cerr << "An error occurred while sending data over the channel. Quitting" << std::endl;
 	return 1;
     }

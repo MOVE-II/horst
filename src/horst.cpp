@@ -30,6 +30,11 @@ namespace horst {
  */
 arguments args;
 
+/**
+ * Global satellite object
+ */
+std::unique_ptr<Satellite> satellite;
+
 
 void show_help(const char *progname) {
 	std::cout << "horst\n"
@@ -128,7 +133,7 @@ int run(int argc, char **argv) {
 			break;
 		default:
 			// ERROR
-			LOG_ERROR(11, "Failed to check leop status!");
+			LOG_ERROR(8, "Failed to check leop status!");
 			args.leop = State::leop_seq::DEPLOYED;
 		}
 
@@ -137,9 +142,8 @@ int run(int argc, char **argv) {
 			LOG_WARN("Startup script failed!");
 		}
 
-		Satellite move2{args};
-
-		return move2.run();
+		satellite = std::make_unique<Satellite>(args);
+		return satellite->run();
 	}
 	catch (Error &error) {
 		LOG_CRITICAL(1, std::string("Internal error! " + std::string(error.what())));

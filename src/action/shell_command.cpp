@@ -35,6 +35,12 @@ std::string ShellCommand::describe() const {
 	return ss.str();
 }
 
+
+bool ShellCommand::is_s3tp() {
+	return (this->request) ? this->request->is_s3tp() : false;
+}
+
+
 void ShellCommand::perform(Satellite *sat, ac_done_cb_t done) {
 
 	// Set default cmdprefix
@@ -46,12 +52,12 @@ void ShellCommand::perform(Satellite *sat, ac_done_cb_t done) {
 	this->process = std::make_unique<Process>(
 		sat->get_loop(),
 		this->cmdprefix + this->command,
+		this->is_s3tp(),
 		[this, done] (Process *, int64_t exit_code) {
 
-			// TODO: if we wanna provide the process' output someday,
-			//       provide it here instead of this stupid exit code.
+			// Return exit code
 			std::stringstream ss;
-			ss << "request exited with " << exit_code << std::endl;
+			ss << "[exit] " << exit_code << std::endl;
 
 			// call callback that was set in the request
 			if (this->request) {

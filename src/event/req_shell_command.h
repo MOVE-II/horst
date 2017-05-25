@@ -10,12 +10,13 @@ namespace horst {
  */
 class ShellCommandReq : public ControlMessage {
 public:
-	ShellCommandReq(const std::string &command);
+	ShellCommandReq(const std::string&);
+	ShellCommandReq(const std::string&, bool);
 
 	/** return the command to be executed */
 	const std::string &get_cmd() const;
 
-	void update(State &state) override;
+	void update(State&) override;
 
 private:
 	std::string cmd;

@@ -304,7 +304,7 @@ int DBusConnection::connect() {
 	);
 
 	if (r < 0) {
-		LOG_ERROR(10, "[dbus] Failed to install the horst sdbus object: " + std::string(strerror(-r)));
+		LOG_ERROR(7, "[dbus] Failed to install the horst sdbus object: " + std::string(strerror(-r)));
 		goto clean_return;
 	}
 

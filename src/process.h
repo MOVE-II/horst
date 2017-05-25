@@ -20,7 +20,7 @@ using proc_exit_cb_t = std::function<void(Process *, int64_t)>;
  */
 class Process {
 public:
-	Process(uv_loop_t *loop, const std::string &cmd,
+	Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	        proc_exit_cb_t on_exit=nullptr);
 
 	// no moves and copies
@@ -37,7 +37,10 @@ protected:
 	 */
 	void exited();
 
+	/** Process handle */
 	uv_process_t handle;
+
+	/** Options for spawned process */
 	uv_process_options_t options;
 
 	/** command that is run by this process */
@@ -48,6 +51,15 @@ protected:
 
 	/** process exit code. is -1 if the processes did not exit yet. */
 	int64_t exit_code;
+
+	/** Pipe to redirect stdout of child process */
+	uv_pipe_t pipe_stdout;
+
+	/** Pipe to redirect stderr of child process */
+	uv_pipe_t pipe_stderr;
+
+	/** Callback for pipe to allocate buffer */
+	static void alloc_buffer(uv_handle_t*, size_t, uv_buf_t*);
 };
 
 } // horst

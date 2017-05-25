@@ -28,7 +28,6 @@ set(CMAKE_BUILD_TYPE RELEASE)
 
 include_directories("${PROJECT_SOURCE_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}/action")
-include_directories("${PROJECT_SOURCE_DIR}/client")
 include_directories("${PROJECT_SOURCE_DIR}/event")
 include_directories("${PROJECT_SOURCE_DIR}/server")
 
@@ -43,7 +42,6 @@ add_executable(horst
 	src/action/trigger_detumbling.cpp
 	src/action/trigger_measuring.cpp
 	src/action/trigger_sunpointing.cpp
-	src/client/client.cpp
 	src/error.cpp
 	src/event/adcs_req_signal.cpp
 	src/event/adcs_signal.cpp

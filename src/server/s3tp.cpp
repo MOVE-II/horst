@@ -1,10 +1,17 @@
 #include <s3tp/core/Logger.h>
 
+#include "../event/req_shell_command.h"
+#include "../horst.h"
+#include "../satellite.h"
 #include "s3tp.h"
 
 namespace horst {
 
-	S3TPServer::S3TPServer(Satellite *sat, int port, std::string socketpath) : S3tpCallback(), Client(sat) {
+	S3TPServer::S3TPServer(int port, std::string socketpath)
+		: S3tpCallback(),
+		buf{std::make_unique<char[]>(this->max_buf_size)},
+		buf_used{0} {
+
 		s3tpSocketPath = strdup(socketpath.c_str());
 
 		// Create channel instance and set default config
@@ -54,8 +61,8 @@ namespace horst {
 			return true;
 		}
 
-		// Reset internal client state
-		this->reset();
+		// Reset internal buffer state
+		this->buf_used = 0;
 
 		// Try to connect
 		LOG_INFO("[s3tp] Try to reconnect...");
@@ -125,19 +132,83 @@ namespace horst {
 	}
 
 	void S3TPServer::onDataReceived(S3tpChannel&, char *data, size_t len) {
-		LOG_DEBUG("[s3tp] Received " + std::to_string(len) + " bytes ("+std::string(data)+")");
-		this->data_received(data, len);
+		LOG_DEBUG("[s3tp] Received " + std::to_string(len) + " bytes");
+
+		// Receive header
+		if (this->expected == 0) {
+			LOG_DEBUG("[s3tp] Receiving new command...");
+			const size_t headersize = sizeof(size_t);
+			std::memcpy(&this->expected, data, headersize);
+
+			// Forward data pointer
+			data += headersize;
+			len -= headersize;
+		}
+
+		// Receive data
+		if (len > 0) {
+			LOG_DEBUG("[s3tp] Receiving command data...");
+
+			if (this->buf_used + this->expected >= this->max_buf_size) {
+				LOG_WARN("[s3tp] Receive buffer too full, closing...");
+				this->close();
+				return;
+			}
+
+			// Copy data into buffer
+			size_t ncpy = std::min(this->expected, (this->max_buf_size - this->buf_used - 1));
+			std::memcpy(&this->buf[this->buf_used], data, ncpy);
+			this->buf[this->buf_used + ncpy] = '\0';
+			this->buf_used += ncpy;
+
+			if (this->buf_used >= this->expected) {
+
+				std::string command(this->buf.get());
+				auto cmd = std::make_unique<ShellCommandReq>(command, true);
+				if (cmd.get() != nullptr) {
+					// handle each command in the event handler
+					cmd->call_on_complete([this] (const std::string &result) {
+						this->send(result.c_str(), result.length());
+					});
+
+					// actually handle the event in the satellite state logic
+					satellite->on_event(std::move(cmd));
+
+					// immediately send back that the command was received.
+					this->send("ack", 3);
+				} else {
+					LOG_WARN("[s3tp] Error while creating request, closing...");
+					this->close();
+					return;
+				}
+
+				this->buf_used = 0;
+				this->buf[0] = '\0';
+				this->expected = 0;
+			}
+		}
 	}
 
 	void S3TPServer::send(const char* msg, size_t len) {
+		if (len == 0)
+			return;
 		LOG_DEBUG("[s3tp] Sending " + std::to_string(len) + " bytes");
+		if (!this->channel) {
+			LOG_WARN("[s3tp] Tried to send without open connection!");
+			return;
+		}
+
+		// Send header
 		this->channel->send((void*)&len, sizeof(len));
+
+		// Send data
 		this->channel->send((void*)msg, len);
+
 		update_events();
 	}
 
 	void S3TPServer::close() {
-		LOG_DEBUG("[s3tp] Connection closed by internal client");
+		LOG_DEBUG("[s3tp] Connection closed internally");
 		uv_poll_stop(&this->connection);
 		this->channel = NULL;
 		this->reconnect();

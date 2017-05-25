@@ -12,7 +12,7 @@ Satellite::Satellite(const arguments &args)
 	:
 	args{args},
 	loop{},
-	s3tp_link{this, args.port, args.socketpath},
+	s3tp_link{args.port, args.socketpath},
 	dbus{this},
 	next_id{0}
 	{
@@ -62,25 +62,9 @@ uv_loop_t *Satellite::get_loop() {
 }
 
 
-id_t Satellite::add_client(std::unique_ptr<Client> &&client) {
-	this->clients.emplace(this->next_id, std::move(client));
-	return this->next_id++;
-}
-
-
 id_t Satellite::add_action(std::unique_ptr<Action> &&action) {
 	this->actions.emplace(this->next_id, std::move(action));
 	return this->next_id++;
-}
-
-
-Client *Satellite::get_client(id_t id) {
-	auto loc = this->clients.find(id);
-	if (loc == std::end(this->clients)) {
-		return nullptr;
-	} else {
-		return loc->second.get();
-	}
 }
 
 
@@ -98,22 +82,17 @@ State *Satellite::get_state() {
 }
 
 
+S3TPServer *Satellite::get_s3tp() {
+	return &this->s3tp_link;
+}
+
+
 void Satellite::remove_action(id_t id) {
 	auto pos = this->actions.find(id);
 	if (pos != std::end(this->actions)) {
 		this->actions.erase(pos);
 	} else {
 		LOG_WARN("[satellite] Attempt to remove an unknown action");
-	}
-}
-
-
-void Satellite::remove_client(id_t id) {
-	auto pos = this->clients.find(id);
-	if (pos != std::end(this->clients)) {
-		this->clients.erase(pos);
-	} else {
-		LOG_WARN("[satellite] Attempt to remove an unknown client");
 	}
 }
 

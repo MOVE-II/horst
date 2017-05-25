@@ -3,14 +3,14 @@
 #include <s3tp/connector/S3tpChannelEvent.h>
 #include <uv.h>
 
-#include "../client/client.h"
-
 
 namespace horst {
 
-class S3TPServer : public S3tpCallback, public Client {
+class S3TPServer : public S3tpCallback {
+	static constexpr size_t max_buf_size = 4096;
+
 public:
-	S3TPServer(Satellite*, int, std::string);
+	S3TPServer(int, std::string);
 	virtual ~S3TPServer();
 
 	static void on_s3tp_event(uv_poll_t*, int, int);
@@ -19,6 +19,11 @@ public:
 	 * Start s3tp server
 	 */
 	bool start(uv_loop_t*);
+
+	/**
+	 * Send some data downlink
+	 */
+	void send(const char*, size_t);
 
 private:
 	/**
@@ -32,12 +37,27 @@ private:
 	std::unique_ptr<S3tpChannelEvent> channel;
 
 	/**
+	 * Buffer for received data
+	 */
+	std::unique_ptr<char[]> buf;
+
+	/**
+	 * Number of bytes in buffer used
+	 */
+	size_t buf_used;
+
+	/**
+	 * Number of bytes expected for command
+	 */
+	size_t expected;
+
+	/**
 	 * Reference to event loop
 	 */
 	uv_loop_t *loop;
 
 	/**
-	 * tcp server for control clients
+	 * s3tp connection
 	 */
 	uv_poll_t connection;
 
@@ -61,9 +81,7 @@ private:
 	void onBufferEmpty(S3tpChannel &channel) override;
 	void onError(int error) override;
 
-	// Client methods
-	void send(const char*, size_t) override;
-	void close() override;
+	void close();
 };
 
 

@@ -10,7 +10,8 @@ namespace horst {
 
 ControlMessage::ControlMessage()
 	:
-	on_done{nullptr} {}
+	on_done{nullptr},
+	s3tp{false} {}
 
 
 std::shared_ptr<ControlMessage>
@@ -78,6 +79,11 @@ bool ControlMessage::is_fact() const {
 	// control messages are never facts.
 	// it's something the ground station requests.
 	return false;
+}
+
+
+bool ControlMessage::is_s3tp() const {
+	return this->s3tp;
 }
 
 

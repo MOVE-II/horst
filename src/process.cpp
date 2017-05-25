@@ -1,4 +1,6 @@
 #include "process.h"
+#include "horst.h"
+#include "satellite.h"
 
 #include <iostream>
 #include <cstring>
@@ -7,14 +9,15 @@
 
 namespace horst {
 
-Process::Process(uv_loop_t *loop, const std::string &cmd,
+Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
                  proc_exit_cb_t on_exit)
 	:
 	cmd{cmd},
 	on_exit{on_exit},
 	exit_code{-1} {
+	int r;
 
-	LOG_INFO("[process] created for '"+ std::string(cmd) +"'");
+	LOG_INFO("[process] created for '"+ std::string(cmd) +"'" + (s3tp ? " from s3tp" : ""));
 
 	// TODO: implement proper sh lexing so we don't need to run sh -c
 	const char *proc_args[4] = {
@@ -53,7 +56,21 @@ Process::Process(uv_loop_t *loop, const std::string &cmd,
 	this->options.file = "sh";
 	this->options.args = args_cpy;
 
-	int r;
+	// Redirect output for s3tp
+	uv_stdio_container_t child_stdio[3];
+	if (s3tp) {
+		uv_pipe_init(loop, &this->pipe_stdout, 1);
+		uv_pipe_init(loop, &this->pipe_stderr, 1);
+
+		this->options.stdio_count = 3;
+		child_stdio[0].flags = UV_IGNORE;
+		child_stdio[1].flags = (uv_stdio_flags) (UV_CREATE_PIPE | UV_WRITABLE_PIPE);
+		child_stdio[1].data.stream = (uv_stream_t *) &this->pipe_stdout;
+		child_stdio[2].flags = (uv_stdio_flags) (UV_CREATE_PIPE | UV_WRITABLE_PIPE);
+		child_stdio[2].data.stream = (uv_stream_t *) &this->pipe_stderr;
+		this->options.stdio = child_stdio;
+	}
+
 	if ((r = uv_spawn(loop, &this->handle, &this->options))) {
 		LOG_WARN("[process] failed spawning: "+ std::string(uv_strerror(r)));
 
@@ -64,16 +81,29 @@ Process::Process(uv_loop_t *loop, const std::string &cmd,
 		// dunno what happens if the spawn fails.
 
 		this->exited();
-	}
-	else {
+	} else {
+		if (s3tp) {
+			uv_read_start((uv_stream_t*)&this->pipe_stdout, alloc_buffer, [](uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
+				if (nread + 1 > (ssize_t) buf->len) return;
+				buf->base[nread] = '\0';
+				satellite->get_s3tp()->send(buf->base, strlen(buf->base));
+				LOG_DEBUG("[process] stdout: " + std::string(buf->base));
+			});
+			uv_read_start((uv_stream_t*)&this->pipe_stderr, alloc_buffer, [](uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
+				if (nread + 1 > (ssize_t) buf->len) return;
+				buf->base[nread] = '\0';
+				satellite->get_s3tp()->send(buf->base, strlen(buf->base));
+				LOG_DEBUG("[process] stderr: " + std::string(buf->base));
+			});
+		}
 		LOG_INFO("[process] launched process with id : "+ std::to_string(this->handle.pid));
 	}
 }
 
-
-// TODO: this could be extended to capture the output of the process
-// https://nikhilm.github.io/uvbook/processes.html#child-process-i-o
-
+void Process::alloc_buffer(uv_handle_t*, size_t suggested_size, uv_buf_t* buf) {
+	buf->base = (char*) malloc(suggested_size);
+	buf->len = suggested_size;
+}
 
 void Process::exited() {
 	// call the process exit callback.
