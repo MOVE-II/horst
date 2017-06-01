@@ -24,7 +24,7 @@ Available states
 | Payload | OFF, IDLE, WANTMEASURE, MEASURING | OFF | The current status of the payload daemon |
 | LEOP | UNDEPLOYED, DEPLOYED, DONE | DEPLOYED | The status of the LEOP sequence, we are currently in |
 
-\* Values for ADCS: NONE, SLEEP, ATTDET, DETUMB, NADIR, SUN, FLASH, EXP
+\* Values for ADCS: NONE, SLEEP, ATTDET, DETUMB, NADIR, SUN, FLASH, EXP, TEST, POWEROFF
 
 All states can be changed by sending horst a signal with a new current value
 or in some cases by a request (e.g. safemode and manual mode).
@@ -37,14 +37,19 @@ with real data is received by signal.
 Resulting actions
 -----------------
 
-Horst might trigger the following actions, if rules apply.
+Horst can trigger the following actions. Most of them are invoked by a matching
+rule in the logic state table, some of them will be invoked on special events
+like startup of HORST.
 
 | Action              | Script name             | Description |
 |---------------------|-------------------------|-------------|
-| Enter safemode      | enter\_safemode.sh      | Enter safemode by disabling certain components |
-| Leave safemode      | leave\_safemode.sh      | Leave safemode by enabling certain components again |
-| Enter manualmode    | enter\_manualmode.sh    |  Enter safemode and start timer to disable it again after 30 minutes |
+| Startup             | startup.sh              | ADCS will be powered on and the ADCS state will be set to SLEEP. In case LEOP is already done also PLTHM will be powered |
+| Enter manualmode    | enter\_manualmode.sh    | Enter safemode and start timer to disable it again after 30 minutes |
 | Leave manualmode    | leave\_manualmode.sh    | Leave manualmode (just resetting the mode) |
+| Enter safemode      | enter\_safemode.sh      | Enter safemode by disabling certain components (Payload, payload daemon, ADCS, GPS, S-Band). This also puts ADCS to sleep mode and the CDH to sleepwake mode |
+| Leave safemode      | leave\_safemode.sh      | Leave safemode state in HORST.  All other components need to be enabled again manually! |
+| Check LEOP          | check\_leop.sh          | Checks, if LEOP is done or not. It therefore tests, if SCIOPS is the currently active systemd target.  (Script returns 0 if leop is done, 1 otherwise) |
+| Finish LEOP         | finish\_leop.sh         | Is called when LEOP phase is finished. It powers on PLTHM |
 | Trigger measuring   | trigger\_measuring.sh   | Trigger measurement by the payload daemon |
 | Trigger detumbling  | trigger\_detumbling.sh  | Trigger detumbling by the ADCS daemon |
 | Trigger sunpointing | trigger\_sunpointing.sh | Trigger sunpointing by the ADCS daemon |
