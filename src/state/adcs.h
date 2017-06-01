@@ -31,7 +31,8 @@ public:
 		SUN,
 		FLASH,
 		EXP,
-		TEST
+		TEST,
+		POWEROFF
 	};
 
 	/**
