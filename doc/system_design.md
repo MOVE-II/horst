@@ -59,20 +59,23 @@ script exists with 0).
 The logic table
 ---------------
 
-All rules that apply will trigger their actions independant from other rules.
+All rules that apply will trigger their corresponding action independant from other rules. Several rules may match on each iteration.
+All scripts will first only be queued. Queued scripts will be processed after processing the whole logic table. 
 
-| Name | safemode | manualmode | maneuvermode | battery | temperature | ADCS pointing | ADCS requested pointing | PL | LEOP | Action |
-| ---- | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ----- |
-| Battery low | no | no | X | <T | X | X | X | X | X | enter\_safemode.sh |
-| Temperature ALARM | no | no | X | X | == alarm | X | X | X | X | enter\_safemode.sh |
-| Safemode on (request) | no | X | X | X | X | X | X | X | X | enter\_safemode.sh |
-| Safemode off (request) | yes | X | X | X | X | X | X | X | X | leave\_safemode.sh |
-| Trigger PL measure | no | no | X | >T | ok | ==sun | == sun OR == none | != measuring | done | trigger\_measuring.sh |
-| ADCS detumbling | no | no | no | X | X | !=sun and !=detumb | !=sun and !=detumb | X | !=undeployed | trigger\_detumbling.sh |
-| ADCS sunpointing | no | no | no | X | X | | detumb | X | X | != undeployed | trigger\_sunpointing.sh |
-| Manualmode on (request) | X | no | X | X | X | X | X | X | X | enter\_manualmode.sh |
-| Manualmode off (request) | X | yes | X | X | X | X | X | X | X | leave\_manualmode.sh |
-| Leop done | X | X | X | X | X | X | X | X | != DONE | finish\_leop.sh |
+| **Name** | **Request** | safemode | manualmode | maneuvermode | battery | temperature | ADCS pointing | ADCS requested pointing | PL | LEOP | **Action** |
+|------|----------|-----|------------|--------------|---------|-------------|---------------|-------------------------|----|------|------------|
+| Manualmode on (request) | manualmode on | - | no | - | - | - | - | - | - | - | enter\_manualmode.sh |
+| Manualmode off (request) | manualmode off | - | yes | - | - | - | - | - | - | - | leave\_manualmode.sh |
+| Battery low | - | no | no | - | <T | - | - | - | - | - | enter\_safemode.sh |
+| Temperature ALARM | - | no | no | - | - | == alarm | - | - | - | - | enter\_safemode.sh |
+| Safemode on (request) | safemode on | no | - | - | - | - | - | - | - | - | enter\_safemode.sh |
+| Safemode off (request) | safemode off | yes | - | - | - | - | - | - | - | - | leave\_safemode.sh |
+| Trigger PL measure | PL wantmeasure | no | no | X | >T | ok | - | - | != measuring | done | trigger\_measuring.sh |
+| ADCS detumbling | - | no | no | no | - | - | !=sun and !=detumb | !=sun and !=detumb | - | != undeployed | trigger\_detumbling.sh |
+| ADCS sunpointing | - | no | no | no | - | - | detumb | - | - | - | != undeployed | trigger\_sunpointing.sh |
+| Leop done | - | - | - | - | - | - | - | - | - | != DONE | finish\_leop.sh |
+
+Cells with a - will not be checked for the given rule.
 
 Algorithm
 ---------
