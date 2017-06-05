@@ -16,6 +16,7 @@ Configuration File
 ==================
 
 There is no configuration file.
+All available configuration is done using command line parameters.
 
 Commandline Parameters
 =======================
@@ -75,28 +76,34 @@ S3TP Interface
 --------------
 
 You can interact with HORST over S3TP.
-The default socket path and S3TP port number can be changed over command
-line parameters, as documented above.
+The default socket path and S3TP port number can be changed per command
+line parameters as documented above.
 
 Over the S3TP interface, arbitrary shell commands can be executed on the
 satellite. The returned value (string) will show success or failure of the
-command execution.
+command execution, the stdout and stderr output of the executing command will be
+transfered back to ground over S3TP.
+
+Please keep in mind that you might want to discard most of the output by e.g.
+redirecting it to /dev/null to save download capacity.
 
 The easiest way to run remote commands is to use the remoteexec tool that
 can be found in `/test/s3tp/`. Just give your command as parameter
-and it will connect to HORST over s3tp and run your command and show
+and it will connect to HORST over s3tp, run your command and show
 the results.
 
-The protocol to communicate with HORST over s3tp is as follows:
+The protocol to communicate with HORST over S3TP is specified as follows:
 1. S3TP connection is established as normal
-2. Ground starts to send a command by sending its length as size\_t
+2. Ground starts to send a command by sending its length as unsigned 64bit
+   integer
 3. Ground sends the command itself
 4. As soon as HORST has received the expected number of bytes it will return
    an "ack" string to notify that it has successfully received the command.
 5. HORST spawns a shell process with the given command
 6. HORST returns stdout and stderr of the process over s3tp. Always first the
    number of bytes is send, afterwards the char array itself.
-7. On exit of the process HORST returns the exit code as "[exit] number"
+7. On exit of the process HORST returns the exit code as "[exit] 123" where 123
+   is replaced by the actual return code
 
 Every command may not be longer than 4096 bytes in total
 (hardcoded buffer size for incoming data over S3TP).

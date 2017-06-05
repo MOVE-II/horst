@@ -8,22 +8,22 @@ Description
 
 HORST is the main management software entity on the MOVE-II board computer.
 
-It synchronizes the states of all the subsystem daemons in order to bring the
-satellite into cross-subsystem states. This allows to check for state
-dependencies between subsystems.
+HORST is responsible for keeping the satellite in a safe state by reacting on
+critical events like low battery or high temperatures with appropriate actions.
+It maintains a global view of the state of the satellite and can check
+cross-subsystem dependencies.
 
-HORST sends requests to a subsystem daemon via D-Bus. The daemon has to react on
-that request, run code to fulfill it and confirms actions with another D-Bus
-message. That way, HORST instructs subsystems to perform actions and in
-return gets feedback about operations that were performed.
+It listens on state signals of other daemons on D-Bus and stores the current
+state in his internal memory and thereby gains a global view on the state
+of the satellite.
+Based on this global state view HORST can decide to react on defined conditions
+with also predefined actions.
+A logic state table is therefore processed on each incoming state update event
+what might invoke actions.
+These actions are provided as shell scripts.
 
-Subsystems must answer to requests by HORST. They can listen for D-Bus events of
-other subsystems as well and react to those additionally. This ensures that
-subsystem may perform communication irrelevant for HORST via D-Bus.
-
-For example, to activate S-Band transmission, the EPS has to provide enough
-power resources and OMAC is required to point the antenna towards the ground
-station. HORST's purpose is it to synchronize this activation procedure.
+Besides the D-Bus interface for satellite local commanding HORST also implements
+an S3TP interface for executing arbitrary shell commands on the satellite.
 
 Installation
 ------------
@@ -37,13 +37,15 @@ mkdir build && cd build && cmake .. && make -j4
 Dependencies
 ------------
 
-Depends on systemd for connecting to D-Bus.
+Depends on systemd for connecting to D-Bus, libuv for the event loop,
+systemd++ for a C++ systemd interface and S3TP for communication with ground
+station.
 
 Artifacts
 ---------
 
 - build/horst
-- src/scripts
+- root/opt/cdh\_horst/scripts
 
 Usage
 -----
