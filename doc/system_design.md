@@ -48,12 +48,34 @@ Horst might trigger the following actions, if rules apply.
 | Trigger measuring   | trigger\_measuring.sh   | Trigger measurement by the payload daemon |
 | Trigger detumbling  | trigger\_detumbling.sh  | Trigger detumbling by the ADCS daemon |
 | Trigger sunpointing | trigger\_sunpointing.sh | Trigger sunpointing by the ADCS daemon |
+| Finish leop         | finish\_leop.sh         | Power on the payload hardware |
 
 For every action there is a corresponding script in the scripts directory
 that will be run, whenever horst triggers the action.
 Depending on the exit status of the script an internal state change might
 be triggered (e.g. we set safemode to true, if the enter\_safemode.sh
 script exists with 0).
+
+The logic table
+---------------
+
+All rules that apply will trigger their corresponding action independant from other rules. Several rules may match on each iteration.
+All scripts will first only be queued. Queued scripts will be processed after processing the whole logic table. 
+
+| **Name** | **Request** | safemode | manualmode | maneuvermode | battery | temperature | ADCS pointing | ADCS requested pointing | PL | LEOP | **Action** |
+|------|----------|-----|------------|--------------|---------|-------------|---------------|-------------------------|----|------|------------|
+| Manualmode on (request) | manualmode on | - | no | - | - | - | - | - | - | - | enter\_manualmode.sh |
+| Manualmode off (request) | manualmode off | - | yes | - | - | - | - | - | - | - | leave\_manualmode.sh |
+| Battery low | - | no | no | - | <T | - | - | - | - | - | enter\_safemode.sh |
+| Temperature ALARM | - | no | no | - | - | == alarm | - | - | - | - | enter\_safemode.sh |
+| Safemode on (request) | safemode on | no | - | - | - | - | - | - | - | - | enter\_safemode.sh |
+| Safemode off (request) | safemode off | yes | - | - | - | - | - | - | - | - | leave\_safemode.sh |
+| Trigger PL measure | PL wantmeasure | no | no | X | >T | ok | - | - | != measuring | done | trigger\_measuring.sh |
+| ADCS detumbling | - | no | no | no | - | - | !=sun and !=detumb | !=sun and !=detumb | - | != undeployed | trigger\_detumbling.sh |
+| ADCS sunpointing | - | no | no | no | - | - | detumb | - | - | - | != undeployed | trigger\_sunpointing.sh |
+| Leop done | - | - | - | - | - | - | - | - | - | != DONE | finish\_leop.sh |
+
+Cells with a - will not be checked for the given rule.
 
 Algorithm
 ---------
