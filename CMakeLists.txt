@@ -4,7 +4,7 @@ project(HORST)
 set(PROJECT_BRIEF "HORST is the brain of the MOVEII satellite.")
 
 set(VERSION_MAJOR 2)
-set(VERSION_MINOR 1)
+set(VERSION_MINOR 2)
 include(version/version.cmake)
 
 message("configuring horst...")

@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
     // Connect
     if (channel.connect(PORT_HORST) < 0) {
 	std::cerr << "Could not connect to HORST on port " << std::to_string(PORT_HORST) << std::endl;
-        return 1;
+	return 1;
     }
     std::cout << "Connection to other endpoint established" << std::endl;
 
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
     }
     std::cout << "Payload sent. Waiting for reply..." << std::endl;
 
-    for (int i = 0; i <= 1; i++) {
+    while (true) {
 	size_t len = 0;
 	char* rcvData = readData(channel, len);
 	if (rcvData == nullptr) {
@@ -105,6 +105,10 @@ int main(int argc, char* argv[]) {
 	    return 1;
 	}
 	std::cout << "Received message: " << std::string(rcvData) << std::endl;
+	if (strncmp(rcvData, "[exit] ", 6) == 0) {
+		delete [] rcvData;
+		break;
+	}
 	delete [] rcvData;
     }
 

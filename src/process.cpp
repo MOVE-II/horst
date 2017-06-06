@@ -84,16 +84,28 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	} else {
 		if (s3tp) {
 			uv_read_start((uv_stream_t*)&this->pipe_stdout, alloc_buffer, [](uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
-				if (nread + 1 > (ssize_t) buf->len) return;
-				buf->base[nread] = '\0';
-				satellite->get_s3tp()->send(buf->base, strlen(buf->base));
-				LOG_DEBUG("[process] stdout: " + std::string(buf->base));
+				if (nread > 0) {
+					if (nread + 1 > (ssize_t) buf->len) return;
+					buf->base[nread] = '\0';
+					satellite->get_s3tp()->send(buf->base, nread);
+					LOG_DEBUG("[process] stdout: " + std::string(buf->base));
+				} else {
+					if (nread == UV_EOF) {
+						LOG_DEBUG("[process] EOF");
+					}
+				}
 			});
 			uv_read_start((uv_stream_t*)&this->pipe_stderr, alloc_buffer, [](uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
-				if (nread + 1 > (ssize_t) buf->len) return;
-				buf->base[nread] = '\0';
-				satellite->get_s3tp()->send(buf->base, strlen(buf->base));
-				LOG_DEBUG("[process] stderr: " + std::string(buf->base));
+				if (nread > 0) {
+					if (nread + 1 > (ssize_t) buf->len) return;
+					buf->base[nread] = '\0';
+					satellite->get_s3tp()->send(buf->base, nread);
+					LOG_DEBUG("[process] stderr: " + std::string(buf->base));
+				} else {
+					if (nread == UV_EOF) {
+						LOG_DEBUG("[process] EOF");
+					}
+				}
 			});
 		}
 		LOG_INFO("[process] launched process with id : "+ std::to_string(this->handle.pid));
