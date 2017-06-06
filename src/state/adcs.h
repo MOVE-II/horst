@@ -32,7 +32,7 @@ public:
 		FLASH,
 		EXP,
 		TEST,
-		POWEROFF
+		POWEROFF = 15
 	};
 
 	/**
