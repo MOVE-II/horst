@@ -1,14 +1,11 @@
 cmake_minimum_required(VERSION 3.4)
-project(s3tp)
+project(HORSTs3tptest)
 set(PROJECT_BRIEF "HORST S3TP test program")
 
 set(VERSION_MAJOR 1)
 set(VERSION_MINOR 3)
 
 # packages
-find_package(moveio REQUIRED)
-include_directories(${MOVEIO_INCLUDE_DIRS})
-
 find_package(trctrl REQUIRED)
 include_directories(${TRCTRL_INCLUDE_DIRS})
 
