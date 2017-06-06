@@ -44,6 +44,10 @@ ADCS::adcs_state ADCS::str2state(char* name) {
 		return ADCS::adcs_state::FLASH;
 	case util::str2int("EXP"):
 		return ADCS::adcs_state::EXP;
+	case util::str2int("TEST"):
+		return ADCS::adcs_state::TEST;
+	case util::str2int("POWEROFF"):
+		return ADCS::adcs_state::POWEROFF;
 	default:
 		LOG_WARN("Could not interpret '" + std::string(name) + "' as ADCS state!");
 		return ADCS::adcs_state::NONE;
