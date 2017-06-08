@@ -66,7 +66,6 @@ add_executable(horst
 	src/server/dbus.cpp
 	src/server/s3tp.cpp
 	src/state/adcs.cpp
-	src/state/com.cpp
 	src/state/computer.cpp
 	src/state/eps.cpp
 	src/state/payload.cpp
