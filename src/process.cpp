@@ -37,8 +37,17 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	                            int /*term_signal*/) {
 
 		Process *this_ = (Process *) req->data;
-
 		this_->exit_code = exit_status;
+
+		// Close pipe handles
+		uv_close(
+			(uv_handle_t*) &this_->pipe_stdout,
+			[] (uv_handle_t *) {}
+		);
+		uv_close(
+			(uv_handle_t*) &this_->pipe_stderr,
+			[] (uv_handle_t *) {}
+		);
 
 		// close the process handle,
 		// call the actual exited callback after that.
@@ -46,7 +55,6 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 		uv_close(
 			(uv_handle_t*) req,
 			[] (uv_handle_t *handle) {
-
 				Process *this_ = (Process *) handle->data;
 				this_->exited();
 			}
