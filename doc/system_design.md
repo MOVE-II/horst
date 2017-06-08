@@ -75,7 +75,7 @@ All scripts will first only be queued. Queued scripts will be processed after pr
 | Temperature ALARM | - | no | no | - | - | == alarm | - | - | - | - | enter\_safemode.sh |
 | Safemode on (request) | safemode on | no | - | - | - | - | - | - | - | - | enter\_safemode.sh |
 | Safemode off (request) | safemode off | yes | - | - | - | - | - | - | - | - | leave\_safemode.sh |
-| Trigger PL measure | PL wantmeasure | no | no | X | >T | ok | - | - | != measuring | done | trigger\_measuring.sh |
+| Trigger PL measure | PL wantmeasure | no | no | X | >T | ok | - | - | - | done | trigger\_measuring.sh |
 | ADCS detumbling | - | no | no | no | - | - | !=sun and !=detumb | !=sun and !=detumb | - | != undeployed | trigger\_detumbling.sh |
 | ADCS sunpointing | - | no | no | no | - | - | detumb | - | - | - | != undeployed | trigger\_sunpointing.sh |
 | Leop done | - | - | - | - | - | - | - | - | - | != DONE | finish\_leop.sh |
