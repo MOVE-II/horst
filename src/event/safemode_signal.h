@@ -10,7 +10,7 @@ namespace horst {
  */
 class SafeModeSignal : public Event {
 public:
-	SafeModeSignal(bool);
+	SafeModeSignal(uint8_t);
 	virtual ~SafeModeSignal() = default;
 
 	bool is_fact() const override;
@@ -18,7 +18,7 @@ public:
 	void update(State &state) override;
 
 protected:
-	bool safemode;
+	uint8_t safemode;
 };
 
 } // horst

@@ -43,17 +43,10 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) {
 		ret.push_back(std::make_unique<LeaveManualMode>());
 	}
 
-	/* Enter safemode in emergency case */
-	if ((this->thm.all_temp == THM::overall_temp::ALARM or
-	     this->eps.battery_level < this->battery_treshold) and
-	    this->safemode == false and this->manualmode == false) {
-		ret.push_back(std::make_unique<EnterSafeMode>());
-	}
-
 	/* Handle requests for entering/leaving safemode */
 	if (target.safemode && (!this->safemode || target.enforced_safemode)) {
 		/* Go to safemode */
-		ret.push_back(std::make_unique<EnterSafeMode>());
+		ret.push_back(std::make_unique<EnterSafeMode>(3));
 	} else if (!target.safemode && this->safemode) {
 		/* Leave safemode */
 		ret.push_back(std::make_unique<LeaveSafeMode>());
@@ -83,6 +76,12 @@ std::vector<std::unique_ptr<Action>> State::transform_to(const State &target) {
 	 */
 	if (!this->safemode && !this->manualmode) {
 
+		/* Enter safemode in emergency case */
+		if (this->thm.all_temp == THM::overall_temp::ALARM) {
+			ret.push_back(std::make_unique<EnterSafeMode>(1));
+		} else if (this->eps.battery_level < this->battery_treshold) {
+			ret.push_back(std::make_unique<EnterSafeMode>(2));
+		}
 
 		if (target.pl.daemon == Payload::daemon_state::WANTMEASURE &&
 		    this->eps.battery_level > this->battery_treshold &&

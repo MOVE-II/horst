@@ -8,7 +8,7 @@
 
 namespace horst {
 
-SafeModeSignal::SafeModeSignal(bool safemode) : safemode(safemode) {}
+SafeModeSignal::SafeModeSignal(uint8_t safemode) : safemode(safemode) {}
 
 bool SafeModeSignal::is_fact() const {
 	return true;
