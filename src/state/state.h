@@ -6,7 +6,6 @@
 
 #include "../action/action.h"
 #include "adcs.h"
-#include "com.h"
 #include "computer.h"
 #include "eps.h"
 #include "payload.h"
@@ -84,9 +83,6 @@ public:
 
 	/** State of the power supply */
 	EPS eps;
-
-	/** State of the COM transciever */
-	COM com;
 
 	/** State of the thermal subsystem */
 	THM thm;
