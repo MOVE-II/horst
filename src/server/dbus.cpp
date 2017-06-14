@@ -128,7 +128,7 @@ static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	} catch (const std::invalid_argument&) {
 		return sd_bus_reply_method_return(m, "b", false);
 	}
-	auto req = std::make_shared<SafeModeReq>(bsafe);
+	auto req = std::make_shared<SafeModeReq>(bsafe ? 3 : 0);
 	this_->get_sat()->on_event(std::move(req));
 
 	return sd_bus_reply_method_return(m, "b", true);

@@ -54,8 +54,14 @@ public:
 	 */
 	Computer computer;
 
-	/** safe mode is active on the satellite */
-	bool safemode;
+	/**
+	 * Safemode state of the satellite
+	 * 0, if no safemode is active
+	 * 1, safemode because of high temperature
+	 * 2, safemode because of low battery
+	 * 3, safemode, because someone requested that
+	 */
+	uint8_t safemode;
 
 	/**
 	 * This will be set by an incoming safemode request only and will force
