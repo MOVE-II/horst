@@ -466,6 +466,27 @@ void DBusConnection::watch_for_signals() {
 		LOG_ERROR(6, "[dbus] Failed to add LEOP state change match: " + std::string(strerror(-r)));
 	}
 
+	r = sd_bus_add_match(
+		this->bus,
+		nullptr,
+		"type='signal',"
+		"interface='moveii.pl',"
+		"member='payloadConditionsNotFulfilled'",
+		[] (sd_bus_message*, void *userdata, sd_bus_error*) -> int {
+			DBusConnection *this_ = (DBusConnection *) userdata;
+			LOG_INFO("[dbus] Payload signaled measurement conditions not fulfilled");
+
+			/* Generate fact and send it to state logic */
+			auto sig = std::make_shared<PayloadSignal>(Payload::daemon_state::IDLE);
+			this_->get_sat()->on_event(std::move(sig));
+
+			return 0;
+		},
+		this
+	);
+	if (r < 0) {
+		LOG_ERROR(6, "[dbus] Failed to add payload measurement conditions not fullfilled match: " + std::string(strerror(-r)));
+	}
 
 	r = sd_bus_add_match(
 		this->bus,
