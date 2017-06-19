@@ -35,19 +35,8 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	this->options.exit_cb = [] (uv_process_t *req,
 	                            int64_t exit_status,
 	                            int /*term_signal*/) {
-
 		Process *this_ = (Process *) req->data;
 		this_->exit_code = exit_status;
-
-		// Close pipe handles
-		uv_close(
-			(uv_handle_t*) &this_->pipe_stdout,
-			[] (uv_handle_t *) {}
-		);
-		uv_close(
-			(uv_handle_t*) &this_->pipe_stderr,
-			[] (uv_handle_t *) {}
-		);
 
 		// close the process handle,
 		// call the actual exited callback after that.
@@ -58,6 +47,17 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 				Process *this_ = (Process *) handle->data;
 				this_->exited();
 			}
+		);
+
+		// Close pipe handles
+		// Only do this after closing the handle
+		uv_close(
+			(uv_handle_t*) &this_->pipe_stdout,
+			[] (uv_handle_t *) {}
+		);
+		uv_close(
+			(uv_handle_t*) &this_->pipe_stderr,
+			[] (uv_handle_t *) {}
 		);
 	};
 
@@ -93,7 +93,11 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 		if (s3tp) {
 			uv_read_start((uv_stream_t*)&this->pipe_stdout, alloc_buffer, [](uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
 				if (nread > 0) {
-					if (nread + 1 > (ssize_t) buf->len) return;
+					if (nread + 1 > (ssize_t) buf->len) {
+						if (buf->base != NULL)
+							free(buf->base);
+						return;
+					}
 					buf->base[nread] = '\0';
 					satellite->get_s3tp()->send(buf->base, nread);
 					LOG_DEBUG("[process] stdout: " + std::string(buf->base));
@@ -102,10 +106,16 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 						LOG_DEBUG("[process] EOF");
 					}
 				}
+				if (buf->base != NULL)
+				    free(buf->base);
 			});
 			uv_read_start((uv_stream_t*)&this->pipe_stderr, alloc_buffer, [](uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
 				if (nread > 0) {
-					if (nread + 1 > (ssize_t) buf->len) return;
+					if (nread + 1 > (ssize_t) buf->len) {
+						if (buf->base != NULL)
+							free(buf->base);
+						return;
+					}
 					buf->base[nread] = '\0';
 					satellite->get_s3tp()->send(buf->base, nread);
 					LOG_DEBUG("[process] stderr: " + std::string(buf->base));
@@ -114,6 +124,8 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 						LOG_DEBUG("[process] EOF");
 					}
 				}
+				if (buf->base != NULL)
+				    free(buf->base);
 			});
 		}
 		LOG_INFO("[process] launched process with id : "+ std::to_string(this->handle.pid));
