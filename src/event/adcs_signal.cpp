@@ -14,9 +14,8 @@ bool ADCSSignal::is_fact() const {
 void ADCSSignal::update(State &state) {
 	state.adcs.pointing = this->adcs_status;
 
-	// Reset requested state, if reached
-	if (state.adcs.requested == state.adcs.pointing)
-		state.adcs.requested = ADCS::adcs_state::NONE;
+	// Reset requested state
+	state.adcs.requested = ADCS::adcs_state::NONE;
 }
 
 }  // horst
