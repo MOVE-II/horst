@@ -10,7 +10,8 @@ namespace horst {
 	S3TPServer::S3TPServer(int port, std::string socketpath)
 		: S3tpCallback(),
 		buf{std::make_unique<char[]>(this->max_buf_size)},
-		buf_used{0} {
+		buf_used{0},
+	        expected{0} {
 
 		s3tpSocketPath = strdup(socketpath.c_str());
 
