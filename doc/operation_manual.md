@@ -27,7 +27,7 @@ All parameters have abbreviations with only their first character.
 
 | Parameter             | Default value     | Value |
 |-----------------------|-------------------|-------|
-| --battery <threshold> | 70                | Battery threshold. If battery level fall below, we will go into safemode |
+| --battery <threshold> | 30                | Battery threshold. If battery level fall below, we will go into safemode |
 | --scripts <path>      | ./scripts/        | Path to scripts directory |
 | --port <port>         | 99                | Listen port for S3TP |
 | --socket <path>       | /run/s3tp.socket  | Socket path for S3TP |

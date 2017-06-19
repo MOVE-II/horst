@@ -9,7 +9,7 @@ StartLimitBurst=10
 Type=dbus
 #User=misc
 BusName=moveii.horst
-ExecStart=/opt/cdh_horst/horst -b 70 -s /opt/cdh_horst/scripts/
+ExecStart=/opt/cdh_horst/horst -b 30 -s /opt/cdh_horst/scripts/
 
 Restart=always
 RestartSec=30
