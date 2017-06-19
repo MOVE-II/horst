@@ -38,16 +38,6 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 		Process *this_ = (Process *) req->data;
 		this_->exit_code = exit_status;
 
-		// Close pipe handles
-		uv_close(
-			(uv_handle_t*) &this_->pipe_stdout,
-			[] (uv_handle_t *) {}
-		);
-		uv_close(
-			(uv_handle_t*) &this_->pipe_stderr,
-			[] (uv_handle_t *) {}
-		);
-
 		// close the process handle,
 		// call the actual exited callback after that.
 		// this is because the exited() function will free the memory.
@@ -57,6 +47,17 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 				Process *this_ = (Process *) handle->data;
 				this_->exited();
 			}
+		);
+
+		// Close pipe handles
+		// Only do this after closing the handle
+		uv_close(
+			(uv_handle_t*) &this_->pipe_stdout,
+			[] (uv_handle_t *) {}
+		);
+		uv_close(
+			(uv_handle_t*) &this_->pipe_stderr,
+			[] (uv_handle_t *) {}
 		);
 	};
 
