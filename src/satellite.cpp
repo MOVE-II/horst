@@ -36,12 +36,12 @@ int Satellite::run() {
 	int ret;
 
 	if (this->dbus.connect()) {
-		LOG_ERROR(4, "[satellite] failed to listen on dbus.");
+		LOG_ERROR(9, "[satellite] Failed to listen on DBus.");
 		return 1;
 	}
 
 	if (!this->s3tp_link.start(&this->loop)) {
-		LOG_ERROR(5, "[satellite] failed to listen on s3tp.");
+		LOG_ERROR(10, "[satellite] Failed to listen on S3TP.");
 	}
 
 	// let the event loop run forever.

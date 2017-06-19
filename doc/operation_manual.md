@@ -11,6 +11,8 @@ Error Codes
 | HORST-6 | Failed to add xyz match | Daemon was not able to register for named signal and will not receive updates for it | Make sure D-Bus is working properly and restart daemon |
 | HORST-7 | Failed to install the horst sdbus object | Daemon was not able to fully initialize his D-Bus functionality | Make sure D-Bus is working and restart daemon |
 | HORST-8 | Failed to check LEOP status | The check\_leop.sh script returned something different than 0 or 1 | Check script and restart daemon |
+| HORST-9 | Failed to listen on DBus| A connection to DBus could not be established | Make sure DBus is available and restart daemon |
+| HORST-10 | Failed to listen on S3TP | A connection to S3TP could not be established | Make sure S3TP is available. Horst will automatically retry to connect regularly |
 
 Configuration File
 ==================
