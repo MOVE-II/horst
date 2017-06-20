@@ -11,7 +11,7 @@
 	sleep $LONGWAIT
 	repeat $REPEATS $SHORTWAIT busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s PLTHM
 
-	repeat $REPEATS $SHORTWAIT busctl --system call moveii.adcs /moveii/adcs moveii.adcs setMode s SLEEP
+	repeat $REPEATS $SHORTWAIT busctl --system call moveii.adcs /moveii/adcs moveii.adcs setMode s POWEROFF
 	sleep $LONGWAIT
 	repeat $REPEATS $SHORTWAIT busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s ADCS5V
 	repeat $REPEATS $SHORTWAIT busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s ADCS3V3
