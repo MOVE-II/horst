@@ -7,7 +7,7 @@
   SHORTWAIT=1
   LONGWAIT=2
 
-	/usr/bin/documentSafemode
+	documentSafemode
 
 	systemctl stop pl.service
 	sleep $LONGWAIT
