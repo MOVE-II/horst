@@ -20,7 +20,7 @@ Trigger sun pointing
 Trigger safemode when battery level below threshold
     Given that the system is in safemode 0
     And that the system manualmode is 0
-    When EPS sends the charge state 30    # the value should be below the threshold
+    When EPS sends the charge state 25    # the value should be below the threshold
     Then the safemode is 1
     # systemctl stop pl.service Can't verify
     And HORST should call ADCS setMode SLEEP

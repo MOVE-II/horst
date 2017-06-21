@@ -44,7 +44,7 @@ like startup of HORST.
 | Action              | Script name             | Description |
 |---------------------|-------------------------|-------------|
 | Startup             | startup.sh              | ADCS will be powered on and the ADCS state will be set to SLEEP. In case LEOP is already done also PLTHM will be powered |
-| Enter manualmode    | enter\_manualmode.sh    | Enter safemode and start timer to disable it again after 30 minutes |
+| Enter manualmode    | enter\_manualmode.sh    | Enter manualmode and start timer to disable it again after 30 minutes |
 | Leave manualmode    | leave\_manualmode.sh    | Leave manualmode (just resetting the mode) |
 | Enter safemode      | enter\_safemode.sh      | Enter safemode by disabling certain components (Payload, payload daemon, ADCS, GPS, S-Band). This also puts ADCS to sleep mode and the CDH to sleepwake mode |
 | Leave safemode      | leave\_safemode.sh      | Leave safemode state in HORST.  All other components need to be enabled again manually! |
@@ -64,8 +64,8 @@ script exists with 0).
 The logic table
 ---------------
 
-All rules that apply will trigger their corresponding action independant from other rules. Several rules may match on each iteration.
-All scripts will first only be queued. Queued scripts will be processed after processing the whole logic table. 
+All rules that apply will trigger their corresponding action independent from other rules. Several rules may match on each iteration.
+All scripts will first only be queued. Queued scripts will be processed after processing the whole logic table.
 
 | **Name** | **Request** | safemode | manualmode | maneuvermode | battery | temperature | ADCS pointing | ADCS requested pointing | PL | LEOP | **Action** |
 |------|----------|-----|------------|--------------|---------|-------------|---------------|-------------------------|----|------|------------|
