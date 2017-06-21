@@ -7,6 +7,8 @@
   SHORTWAIT=1
   LONGWAIT=2
 
+	documentSafemode
+
 	systemctl stop pl.service
 	sleep $LONGWAIT
 	repeat $REPEATS $SHORTWAIT busctl --system call moveii.eps /moveii/eps moveii.eps switchOff s PLTHM
