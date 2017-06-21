@@ -51,14 +51,18 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 
 		// Close pipe handles
 		// Only do this after closing the handle
-		uv_close(
-			(uv_handle_t*) &this_->pipe_stdout,
-			[] (uv_handle_t *) {}
-		);
-		uv_close(
-			(uv_handle_t*) &this_->pipe_stderr,
-			[] (uv_handle_t *) {}
-		);
+		if (uv_is_active((uv_handle_t*) &this_->pipe_stdout)) {
+			uv_close(
+				(uv_handle_t*) &this_->pipe_stdout,
+				[] (uv_handle_t *) {}
+			);
+		}
+		if (uv_is_active((uv_handle_t*) &this_->pipe_stderr)) {
+			uv_close(
+				(uv_handle_t*) &this_->pipe_stderr,
+				[] (uv_handle_t *) {}
+			);
+		}
 	};
 
 	this->options.file = "sh";
