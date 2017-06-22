@@ -11,7 +11,7 @@ namespace horst {
 
 
 /**
- * Represents the state of the power supply.
+ * Represents the thermal status
  */
 class THM : public StateComponent {
 public:
@@ -20,7 +20,7 @@ public:
 	std::vector<std::unique_ptr<Action>> transform_to(const THM &target) const;
 
 	/**
-	 * overall temperature state of the satellite.
+	 * Overall temperature state of the satellite.
 	 */
 	enum class overall_temp {
 		OK,

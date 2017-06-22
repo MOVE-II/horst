@@ -11,7 +11,7 @@ namespace horst {
 
 
 /**
- * Represents the state of the power supply.
+ * Represents the state of the ADCS
  */
 class ADCS : public StateComponent {
 public:
