@@ -11,7 +11,7 @@ namespace horst {
 
 
 /**
- * Represents the state of the power supply.
+ * Represents the state of the payload daemon.
  */
 class Payload : public StateComponent {
 public:

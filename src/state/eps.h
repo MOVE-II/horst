@@ -20,7 +20,7 @@ public:
 	std::vector<std::unique_ptr<Action>> transform_to(const EPS &target) const;
 
 	/**
-	 * battery level in [0.01]% (that means 1000 => 10% battery left)
+	 * Battery level in %
 	 */
 	uint16_t battery_level;
 };
