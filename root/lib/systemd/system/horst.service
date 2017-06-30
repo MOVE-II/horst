@@ -1,6 +1,6 @@
 [Unit]
 Description=HORST
-After=dbus.service s3tp.service eps.service adcs.service pl.service thm.service
+After=s3tp.service eps.service adcs.service pl.service thm.service
 
 StartLimitIntervalSec=10min
 StartLimitBurst=10
