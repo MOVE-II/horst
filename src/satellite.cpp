@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <memory>
+#include <systemd/sd-daemon.h>
+#include <uv.h>
 
 #include "action/action.h"
 #include "util.h"
@@ -22,6 +24,21 @@ Satellite::Satellite(const arguments &args)
 	this->current_state.eps.battery_level = args.battery_treshold;
 	this->current_state.leop = args.leop;
 	uv_loop_init(&this->loop);
+
+	// Init watchdog timer
+	uint64_t watchdog_period = 0;
+	sd_watchdog_enabled(false, &watchdog_period);
+	if (watchdog_period > 0) {
+		uv_timer_init(&this->loop, &this->timer);
+		uv_timer_start(
+			&this->timer,
+			[] (uv_timer_t *) {
+				sd_notify(false, "WATCHDOG=1");
+			},
+			0, // time in milliseconds, do first notify immediatelly
+			watchdog_period/2/1000 // notify after half of watchdog timeout
+		);
+	}
 }
 
 

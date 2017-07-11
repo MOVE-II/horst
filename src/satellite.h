@@ -107,6 +107,11 @@ private:
 	 * current state of the satellite.
 	 */
 	State current_state;
+
+	/**
+	 * Timer for watchdog notify
+	 */
+	uv_timer_t timer;
 };
 
 } // horst
