@@ -29,6 +29,7 @@ an S3TP interface for executing arbitrary shell commands on the satellite.
 * systemd++
 * libuv
 * libdl
+* trctrl
 * s3tp
 
 More details can be found in the [CMake file](CMakeLists.txt)
