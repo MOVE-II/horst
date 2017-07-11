@@ -11,6 +11,7 @@ Type=dbus
 BusName=moveii.horst
 ExecStart=/opt/cdh_horst/horst -b 30 -s /opt/cdh_horst/scripts/
 
+WatchdogSec=90
 Restart=always
 RestartSec=30
 
