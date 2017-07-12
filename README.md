@@ -84,12 +84,6 @@ See [COPYING](COPYING) for further info.
 * General Documentation
   * [Operation Manual](./doc/operation_manual.md)
   * [Interfaces](./doc/interfaces.md)
-  * Further parts
-    <!-- REPLACE WITH:
-        Extend this list or remove the whole point if not applicable
-    -->
-    * [comraw] README
-    * [linkfire] README
 * Technical Documentation
   * [System Design](./doc/system_design.md)
   * [Sequence Diagram](./doc/sequence.svg)
