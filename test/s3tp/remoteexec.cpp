@@ -74,6 +74,7 @@ int main(int argc, char* argv[]) {
     config.options = S3TP_OPTION_ARQ;
 
     // Synchronous mode
+    std::cout << "<7>Binding..." << std::endl;
     S3tpChannelSync channel(config);
     channel.bind(error);
     if (error != 0) {
@@ -84,18 +85,19 @@ int main(int argc, char* argv[]) {
     sleep(1);
 
     // Connect
+    std::cout << "<7>Connecting..." << std::endl;
     if (channel.connect(PORT_HORST) < 0) {
 	std::cerr << "Could not connect to HORST on port " << std::to_string(PORT_HORST) << std::endl;
 	return 1;
     }
-    std::cout << "Connection to other endpoint established" << std::endl;
+    std::cout << "<7>Connection to other endpoint established" << std::endl;
 
     // Write command
     if (!writeData(channel, command + "\n")) {
 	std::cerr << "An error occurred while sending data over the channel. Quitting" << std::endl;
 	return 1;
     }
-    std::cout << "Payload sent. Waiting for reply..." << std::endl;
+    std::cout << "<7>Payload sent. Waiting for reply..." << std::endl;
 
     while (true) {
 	size_t len = 0;
@@ -104,18 +106,24 @@ int main(int argc, char* argv[]) {
 	    std::cout << "An error occurred while reading data from the channel. Quitting" << std::endl;
 	    return 1;
 	}
-	std::cout << "Received message: " << std::string(rcvData) << std::endl;
+	if (len == 3 && strncmp(rcvData, "ack", 3) == 0) {
+		std::cout << "<7>Command received at remote side" << std::endl;
+		delete [] rcvData;
+		continue;
+	}
 	if (strncmp(rcvData, "[exit] ", 6) == 0) {
+		std::cout << "<6>Command completed with exit status: " << std::string(rcvData) << std::endl;
 		delete [] rcvData;
 		break;
 	}
+	std::cout << std::string(rcvData) << std::endl;
 	delete [] rcvData;
     }
 
     if (channel.isConnected()) {
 	channel.disconnect();
     }
-    std::cout << "Quitting..." << std::endl;
+    std::cout << "<7>Quitting..." << std::endl;
 
     return 0;
 }
