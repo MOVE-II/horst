@@ -123,7 +123,7 @@ namespace horst {
 	}
 
 	void S3TPServer::onConnected(S3tpChannel&) {
-		LOG_DEBUG("[s3tp] Connection is active");
+		LOG_INFO("[s3tp] Connection is active");
 	}
 
 	void S3TPServer::onDisconnected(S3tpChannel&, int error) {
@@ -135,7 +135,7 @@ namespace horst {
 
 	void S3TPServer::onDataReceived(S3tpChannel&, char *data, size_t len) {
 		const size_t headersize = sizeof(size_t);
-		LOG_DEBUG("[s3tp] Received " + std::to_string(len) + " bytes");
+		LOG_INFO("[s3tp] Received " + std::to_string(len) + " bytes");
 
 		if (this->buf_used + len >= this->max_buf_size) {
 			LOG_WARN("[s3tp] Receive buffer too full, closing...");
@@ -168,7 +168,7 @@ namespace horst {
 
 		// Receive data
 		if (this->buf_used >= this->expected + headersize) {
-			LOG_DEBUG("[s3tp] Receiving command data...");
+			LOG_INFO("[s3tp] Receiving command data...");
 			std::string command(&this->buf.get()[headersize]);
 			auto cmd = std::make_unique<ShellCommandReq>(command, true);
 			if (cmd.get() != nullptr) {
@@ -197,7 +197,7 @@ namespace horst {
 	void S3TPServer::send(const char* msg, size_t len) {
 		if (len == 0)
 			return;
-		LOG_DEBUG("[s3tp] Sending " + std::to_string(len) + " bytes");
+		LOG_INFO("[s3tp] Sending " + std::to_string(len) + " bytes");
 		if (!this->channel) {
 			LOG_WARN("[s3tp] Tried to send without open connection!");
 			return;
@@ -220,11 +220,11 @@ namespace horst {
 	}
 
 	void S3TPServer::onBufferFull(S3tpChannel&) {
-		LOG_DEBUG("[s3tp] Buffer is full");
+		LOG_INFO("[s3tp] Buffer is full");
 	}
 
 	void S3TPServer::onBufferEmpty(S3tpChannel&) {
-		LOG_DEBUG("[s3tp] Buffer is empty");
+		LOG_INFO("[s3tp] Buffer is empty");
 	}
 
 	void S3TPServer::onError(int error) {
