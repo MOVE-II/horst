@@ -4,6 +4,7 @@
 
 const std::string SUB_COMPONENT = "S3TP";
 const bool TIMESTAMP_ENABLED = false;
+const size_t INTSIZE_ON_SATELLITE = 4;
 
 const uint8_t PORT_HORST = 99;
 const uint8_t PORT_LOCAL = 4000;
@@ -19,7 +20,7 @@ bool writeData(S3tpChannel& channel, std::string line) {
     size_t len = line.length();
 
     // Send length of msg
-    if (channel.send(&len, sizeof(len)) <= 0) {
+    if (channel.send(&len, INTSIZE_ON_SATELLITE) <= 0) {
         return false;
     }
 
@@ -39,9 +40,8 @@ bool writeData(S3tpChannel& channel, std::string line) {
 
 char * readData(S3tpChannel& channel, size_t& len) {
     char * readBuffer;
-
-    if (channel.recv(&len, sizeof(len)) <= 0) {
-        return nullptr;
+    if (channel.recv(&len, INTSIZE_ON_SATELLITE) <= 0) {
+	return nullptr;
     }
     readBuffer = new char[len + 1];
     if (channel.recv(readBuffer, len) <= 0) {
