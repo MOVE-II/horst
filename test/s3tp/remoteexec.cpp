@@ -7,7 +7,7 @@ const bool TIMESTAMP_ENABLED = false;
 
 const uint8_t PORT_HORST = 99;
 const uint8_t PORT_LOCAL = 4000;
-char* SOCKETPATH = "/tmp/s3tp4000";
+char* SOCKETPATH = "/tmp/s3tp.a";
 
 
 const size_t bufferSize = 4096;
