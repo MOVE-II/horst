@@ -112,11 +112,11 @@ int main(int argc, char* argv[]) {
 		continue;
 	}
 	if (strncmp(rcvData, "[exit] ", 6) == 0) {
-		std::cout << "<6>Command completed with exit status: " << std::string(rcvData) << std::endl;
+		std::cout << "<6>Command completed with exit status: " << std::string(rcvData);
 		delete [] rcvData;
 		break;
 	}
-	std::cout << std::string(rcvData) << std::endl;
+	std::cout << std::string(rcvData);
 	delete [] rcvData;
     }
 
