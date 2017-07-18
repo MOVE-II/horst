@@ -1,0 +1,11 @@
+[Unit]
+Description=HORST startup script
+After=eps.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/cdh_horst/scripts/startup_service.sh
+
+
+[Install]
+WantedBy=MOVEII.target
