@@ -4,10 +4,11 @@
 
 const std::string SUB_COMPONENT = "S3TP";
 const bool TIMESTAMP_ENABLED = false;
+const size_t INTSIZE_ON_SATELLITE = 4;
 
 const uint8_t PORT_HORST = 99;
-const uint8_t PORT_LOCAL = 4000;
-char* SOCKETPATH = "/tmp/s3tp4000";
+const uint8_t PORT_LOCAL = 17;
+const char* SOCKETPATH = "/tmp/s3tp.a";
 
 
 const size_t bufferSize = 4096;
@@ -19,7 +20,7 @@ bool writeData(S3tpChannel& channel, std::string line) {
     size_t len = line.length();
 
     // Send length of msg
-    if (channel.send(&len, sizeof(len)) <= 0) {
+    if (channel.send(&len, INTSIZE_ON_SATELLITE) <= 0) {
         return false;
     }
 
@@ -39,9 +40,8 @@ bool writeData(S3tpChannel& channel, std::string line) {
 
 char * readData(S3tpChannel& channel, size_t& len) {
     char * readBuffer;
-
-    if (channel.recv(&len, sizeof(len)) <= 0) {
-        return nullptr;
+    if (channel.recv(&len, INTSIZE_ON_SATELLITE) <= 0) {
+	return nullptr;
     }
     readBuffer = new char[len + 1];
     if (channel.recv(readBuffer, len) <= 0) {
@@ -74,48 +74,55 @@ int main(int argc, char* argv[]) {
     config.options = S3TP_OPTION_ARQ;
 
     // Synchronous mode
+    LOG_DEBUG("Binding...");
     S3tpChannelSync channel(config);
     channel.bind(error);
     if (error != 0) {
-	std::cerr << "Couldn't bind to port " << std::to_string(PORT_LOCAL)
-	    << ", due to error " << std::to_string(error) << std::endl;
+	LOG_ERROR("Couldn't bind to port " + std::to_string(PORT_LOCAL) + " due to error " + std::to_string(error));
 	return 1;
     }
     sleep(1);
 
     // Connect
+    LOG_DEBUG("Connecting...");
     if (channel.connect(PORT_HORST) < 0) {
-	std::cerr << "Could not connect to HORST on port " << std::to_string(PORT_HORST) << std::endl;
+	LOG_ERROR("Could not connect to HORST on port " + std::to_string(PORT_HORST));
 	return 1;
     }
-    std::cout << "Connection to other endpoint established" << std::endl;
+    LOG_INFO("Connection to HORST established.");
 
     // Write command
     if (!writeData(channel, command + "\n")) {
-	std::cerr << "An error occurred while sending data over the channel. Quitting" << std::endl;
+	LOG_ERROR("An error occurred while sending data over the channel. Quitting.");
 	return 1;
     }
-    std::cout << "Payload sent. Waiting for reply..." << std::endl;
+    LOG_DEBUG("Payload sent. Waiting for reply....");
 
     while (true) {
 	size_t len = 0;
 	char* rcvData = readData(channel, len);
 	if (rcvData == nullptr) {
-	    std::cout << "An error occurred while reading data from the channel. Quitting" << std::endl;
+	    LOG_ERROR("Error occurred while reading data from the channel. Quitting.");
 	    return 1;
 	}
-	std::cout << "Received message: " << std::string(rcvData) << std::endl;
+	if (len == 3 && strncmp(rcvData, "ack", 3) == 0) {
+		LOG_INFO("HORST has received the command.");
+		delete [] rcvData;
+		continue;
+	}
 	if (strncmp(rcvData, "[exit] ", 6) == 0) {
+		LOG_INFO("Command completed with exit status: " + std::string(rcvData));
 		delete [] rcvData;
 		break;
 	}
+	std::cout << std::string(rcvData);
 	delete [] rcvData;
     }
 
     if (channel.isConnected()) {
 	channel.disconnect();
     }
-    std::cout << "Quitting..." << std::endl;
+    LOG_DEBUG("Quitting.");
 
     return 0;
 }
