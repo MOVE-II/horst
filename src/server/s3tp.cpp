@@ -134,7 +134,7 @@ namespace horst {
 	}
 
 	void S3TPServer::onDataReceived(S3tpChannel&, char *data, size_t len) {
-		const size_t headersize = sizeof(size_t);
+		const size_t headersize = sizeof(this->expected);
 		LOG_INFO("[s3tp] Received " + std::to_string(len) + " bytes");
 
 		if (this->buf_used + len >= this->max_buf_size) {
@@ -150,7 +150,7 @@ namespace horst {
 		this->buf_used += ncpy;
 
 		// Not enough data yet
-		if (this->buf_used < sizeof(size_t)) {
+		if (this->buf_used < headersize) {
 			LOG_DEBUG("[s3tp] Not enough data received, waiting for more...");
 			return;
 		}
@@ -194,7 +194,7 @@ namespace horst {
 		}
 	}
 
-	void S3TPServer::send(const char* msg, size_t len) {
+	void S3TPServer::send(const char* msg, uint32_t len) {
 		if (len == 0)
 			return;
 		LOG_INFO("[s3tp] Sending " + std::to_string(len) + " bytes");

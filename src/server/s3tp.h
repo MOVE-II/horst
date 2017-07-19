@@ -23,7 +23,7 @@ public:
 	/**
 	 * Send some data downlink
 	 */
-	void send(const char*, size_t);
+	void send(const char*, uint32_t);
 
 private:
 	/**
@@ -49,7 +49,7 @@ private:
 	/**
 	 * Number of bytes expected for command
 	 */
-	size_t expected;
+	uint32_t expected;
 
 	/**
 	 * Reference to event loop

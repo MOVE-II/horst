@@ -4,23 +4,22 @@
 
 const std::string SUB_COMPONENT = "S3TP";
 const bool TIMESTAMP_ENABLED = false;
-const size_t INTSIZE_ON_SATELLITE = 4;
 
 const uint8_t PORT_HORST = 99;
 const uint8_t PORT_LOCAL = 17;
 const char* SOCKETPATH = "/tmp/s3tp.a";
 
 
-const size_t bufferSize = 4096;
+const uint32_t bufferSize = 4096;
 char buffer[4096];
 
 bool writeData(S3tpChannel& channel, std::string line) {
     size_t toWrite = 0;
     size_t i = 0;
-    size_t len = line.length();
+    uint32_t len = line.length();
 
     // Send length of msg
-    if (channel.send(&len, INTSIZE_ON_SATELLITE) <= 0) {
+    if (channel.send(&len, sizeof(len)) <= 0) {
         return false;
     }
 
@@ -38,9 +37,9 @@ bool writeData(S3tpChannel& channel, std::string line) {
     return true;
 }
 
-char * readData(S3tpChannel& channel, size_t& len) {
+char * readData(S3tpChannel& channel, uint32_t& len) {
     char * readBuffer;
-    if (channel.recv(&len, INTSIZE_ON_SATELLITE) <= 0) {
+    if (channel.recv(&len, sizeof(len)) <= 0) {
 	return nullptr;
     }
     readBuffer = new char[len + 1];
@@ -99,7 +98,7 @@ int main(int argc, char* argv[]) {
     LOG_DEBUG("Payload sent. Waiting for reply....");
 
     while (true) {
-	size_t len = 0;
+	uint32_t len = 0;
 	char* rcvData = readData(channel, len);
 	if (rcvData == nullptr) {
 	    LOG_ERROR("Error occurred while reading data from the channel. Quitting.");
