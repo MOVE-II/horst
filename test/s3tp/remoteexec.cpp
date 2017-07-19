@@ -9,47 +9,38 @@ const uint8_t PORT_HORST = 99;
 const uint8_t PORT_LOCAL = 17;
 const char* SOCKETPATH = "/tmp/s3tp.a";
 
-
-const uint32_t bufferSize = 4096;
-char buffer[4096];
-
 bool writeData(S3tpChannel& channel, std::string line) {
-    size_t toWrite = 0;
-    size_t i = 0;
     uint32_t len = line.length();
 
-    // Send length of msg
+    // Send length of data
     if (channel.send(&len, sizeof(len)) <= 0) {
         return false;
     }
 
-    // Send command
-    const char * data = line.data();
-    while (i < len) {
-        toWrite = (size_t) std::min(bufferSize, len);
-        memcpy(buffer + i, data, toWrite);
-        if (channel.send(buffer, toWrite) <= 0) {
-            return false;
-        }
-        i += toWrite;
+    // Send data
+    std::vector<char> tosend(line.begin(), line.end());
+    tosend.push_back('\0');
+    if (channel.send(&tosend[0], len) <= 0) {
+        return false;
     }
 
     return true;
 }
 
-char * readData(S3tpChannel& channel, uint32_t& len) {
-    char * readBuffer;
-    if (channel.recv(&len, sizeof(len)) <= 0) {
-	return nullptr;
-    }
-    readBuffer = new char[len + 1];
-    if (channel.recv(readBuffer, len) <= 0) {
-        delete [] readBuffer;
-        return nullptr;
-    }
-    readBuffer[len] = '\0';
+std::string readData(S3tpChannel& channel, uint32_t& len) {
 
-    return readBuffer;
+    // Read length of data
+    if (channel.recv(&len, sizeof(len)) <= 0) {
+	throw new std::runtime_error("Could not read length!");
+    }
+
+    // Read data
+    std::string data(len, ' ');
+    if (channel.recv(&data[0], len) <= 0) {
+	throw new std::runtime_error("Could not read data!");
+    }
+
+    return data;
 }
 
 int main(int argc, char* argv[]) {
@@ -80,7 +71,6 @@ int main(int argc, char* argv[]) {
 	LOG_ERROR("Couldn't bind to port " + std::to_string(PORT_LOCAL) + " due to error " + std::to_string(error));
 	return 1;
     }
-    sleep(1);
 
     // Connect
     LOG_DEBUG("Connecting...");
@@ -99,23 +89,16 @@ int main(int argc, char* argv[]) {
 
     while (true) {
 	uint32_t len = 0;
-	char* rcvData = readData(channel, len);
-	if (rcvData == nullptr) {
-	    LOG_ERROR("Error occurred while reading data from the channel. Quitting.");
-	    return 1;
-	}
-	if (len == 3 && strncmp(rcvData, "ack", 3) == 0) {
+	std::string rcvData = readData(channel, len);
+	if (rcvData.compare("ack") == 0) {
 		LOG_INFO("HORST has received the command.");
-		delete [] rcvData;
 		continue;
 	}
-	if (strncmp(rcvData, "[exit] ", 6) == 0) {
+	if (rcvData.compare(0, 7, "[exit] ") == 0) {
 		LOG_INFO("Command completed with exit status: " + std::string(rcvData));
-		delete [] rcvData;
 		break;
 	}
-	std::cout << std::string(rcvData);
-	delete [] rcvData;
+	std::cout << rcvData;
     }
 
     if (channel.isConnected()) {
