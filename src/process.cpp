@@ -51,13 +51,11 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 
 		// Close pipe handles
 		// Only do this after closing the handle
-		if (uv_is_active((uv_handle_t*) &this_->pipe_stdout)) {
+		if (this_->options.stdio_count == 3) {
 			uv_close(
 				(uv_handle_t*) &this_->pipe_stdout,
 				[] (uv_handle_t *) {}
 			);
-		}
-		if (uv_is_active((uv_handle_t*) &this_->pipe_stderr)) {
 			uv_close(
 				(uv_handle_t*) &this_->pipe_stderr,
 				[] (uv_handle_t *) {}
