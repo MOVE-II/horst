@@ -18,9 +18,7 @@ bool writeData(S3tpChannel& channel, std::string line) {
     }
 
     // Send data
-    std::vector<char> tosend(line.begin(), line.end());
-    tosend.push_back('\0');
-    if (channel.send(&tosend[0], len) <= 0) {
+    if (channel.send(&line[0], len) <= 0) {
         return false;
     }
 
@@ -35,7 +33,7 @@ std::string readData(S3tpChannel& channel, uint32_t& len) {
     }
 
     // Read data
-    std::string data(len, ' ');
+    std::string data(len, 0);
     if (channel.recv(&data[0], len) <= 0) {
 	throw new std::runtime_error("Could not read data!");
     }
