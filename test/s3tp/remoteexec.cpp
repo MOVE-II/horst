@@ -29,13 +29,13 @@ std::string readData(S3tpChannel& channel, uint32_t& len) {
 
     // Read length of data
     if (channel.recv(&len, sizeof(len)) <= 0) {
-	throw new std::runtime_error("Could not read length!");
+        throw std::runtime_error("Could not read length!");
     }
 
     // Read data
     std::string data(len, 0);
     if (channel.recv(&data[0], len) <= 0) {
-	throw new std::runtime_error("Could not read data!");
+        throw std::runtime_error("Could not read data!");
     }
 
     return data;
