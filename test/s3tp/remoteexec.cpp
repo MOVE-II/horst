@@ -26,16 +26,19 @@ bool writeData(S3tpChannel& channel, std::string line) {
 }
 
 std::string readData(S3tpChannel& channel, uint32_t& len) {
+    int error;
 
     // Read length of data
-    if (channel.recv(&len, sizeof(len)) <= 0) {
-        throw std::runtime_error("Could not read length!");
+    error = channel.recv(&len, sizeof(len));
+    if (error <= 0) {
+        throw std::runtime_error("Could not read length! (error=" + std::to_string(error) + ")");
     }
 
     // Read data
     std::string data(len, 0);
-    if (channel.recv(&data[0], len) <= 0) {
-        throw std::runtime_error("Could not read data!");
+    error = channel.recv(&data[0], len);
+    if (error <= 0) {
+        throw std::runtime_error("Could not read data! (error=" + std::to_string(error) + ")");
     }
 
     return data;
