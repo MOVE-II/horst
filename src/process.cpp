@@ -49,15 +49,11 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 			}
 		);
 
-		// Close pipe handles
+		// Close pipe handle
 		// Only do this after closing the handle
 		if (this_->options.stdio_count == 3) {
 			uv_close(
-				(uv_handle_t*) &this_->pipe_stdout,
-				[] (uv_handle_t *) {}
-			);
-			uv_close(
-				(uv_handle_t*) &this_->pipe_stderr,
+				(uv_handle_t*) &this_->pipe_out,
 				[] (uv_handle_t *) {}
 			);
 		}
@@ -69,15 +65,14 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	// Redirect output for s3tp
 	uv_stdio_container_t child_stdio[3];
 	if (s3tp) {
-		uv_pipe_init(loop, &this->pipe_stdout, 1);
-		uv_pipe_init(loop, &this->pipe_stderr, 1);
+		uv_pipe_init(loop, &this->pipe_out, 1);
 
 		this->options.stdio_count = 3;
 		child_stdio[0].flags = UV_IGNORE;
 		child_stdio[1].flags = (uv_stdio_flags) (UV_CREATE_PIPE | UV_WRITABLE_PIPE);
-		child_stdio[1].data.stream = (uv_stream_t *) &this->pipe_stdout;
-		child_stdio[2].flags = (uv_stdio_flags) (UV_CREATE_PIPE | UV_WRITABLE_PIPE);
-		child_stdio[2].data.stream = (uv_stream_t *) &this->pipe_stderr;
+		child_stdio[1].data.stream = (uv_stream_t *) &this->pipe_out;
+		child_stdio[2].flags = (uv_stdio_flags) (UV_WRITABLE_PIPE);
+		child_stdio[2].data.stream = (uv_stream_t *) &this->pipe_out;
 		this->options.stdio = child_stdio;
 	}
 
@@ -93,7 +88,7 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 		this->exited();
 	} else {
 		if (s3tp) {
-			uv_read_start((uv_stream_t*)&this->pipe_stdout, alloc_buffer, [](uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
+			uv_read_start((uv_stream_t*)&this->pipe_out, alloc_buffer, [](uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
 				if (nread > 0) {
 					if (nread + 1 > (ssize_t) buf->len) {
 						if (buf->base != NULL)
@@ -102,25 +97,7 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 					}
 					buf->base[nread] = '\0';
 					satellite->get_s3tp()->send(buf->base, nread);
-					LOG_DEBUG("[process] stdout: " + std::string(buf->base));
-				} else {
-					if (nread == UV_EOF) {
-						LOG_DEBUG("[process] EOF");
-					}
-				}
-				if (buf->base != NULL)
-				    free(buf->base);
-			});
-			uv_read_start((uv_stream_t*)&this->pipe_stderr, alloc_buffer, [](uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
-				if (nread > 0) {
-					if (nread + 1 > (ssize_t) buf->len) {
-						if (buf->base != NULL)
-							free(buf->base);
-						return;
-					}
-					buf->base[nread] = '\0';
-					satellite->get_s3tp()->send(buf->base, nread);
-					LOG_DEBUG("[process] stderr: " + std::string(buf->base));
+					LOG_DEBUG("[process] output: " + std::string(buf->base));
 				} else {
 					if (nread == UV_EOF) {
 						LOG_DEBUG("[process] EOF");
