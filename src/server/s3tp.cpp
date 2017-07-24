@@ -9,8 +9,6 @@ namespace horst {
 
 	S3TPServer::S3TPServer(int port, std::string socketpath)
 		: S3tpCallback(),
-		buf{std::make_unique<char[]>(this->max_buf_size)},
-		buf_used{0},
 	        expected{0} {
 
 		s3tpSocketPath = strdup(socketpath.c_str());
@@ -63,7 +61,7 @@ namespace horst {
 		}
 
 		// Reset internal buffer state
-		this->buf_used = 0;
+		this->buf.clear();
 		this->expected = 0;
 
 		// Try to connect
@@ -137,20 +135,11 @@ namespace horst {
 		const size_t headersize = sizeof(this->expected);
 		LOG_INFO("[s3tp] Received " + std::to_string(len) + " bytes");
 
-		if (this->buf_used + len >= this->max_buf_size) {
-			LOG_WARN("[s3tp] Receive buffer too full, closing...");
-			this->close();
-			return;
-		}
-
 		// Copy data into buffer
-		size_t ncpy = std::min(len, (this->max_buf_size - this->buf_used - 1));
-		std::memcpy(&this->buf[this->buf_used], data, ncpy);
-		this->buf[this->buf_used + ncpy] = '\0';
-		this->buf_used += ncpy;
+		this->buf.insert(this->buf.end(), data, data + len);
 
 		// Not enough data yet
-		if (this->buf_used < headersize) {
+		if (this->buf.size() < headersize) {
 			LOG_DEBUG("[s3tp] Not enough data received, waiting for more...");
 			return;
 		}
@@ -158,7 +147,7 @@ namespace horst {
 		// Receive header
 		if (this->expected == 0) {
 			LOG_DEBUG("[s3tp] Receiving new command...");
-			std::memcpy(&this->expected, this->buf.get(), headersize);
+			std::memcpy(&this->expected, this->buf.data(), headersize);
 			if (this->expected == 0) {
 				LOG_WARN("[s3tp] Invalid length received, closing...");
 				this->close();
@@ -167,9 +156,9 @@ namespace horst {
 		}
 
 		// Receive data
-		if (this->buf_used >= this->expected + headersize) {
+		if (this->buf.size() >= this->expected + headersize) {
 			LOG_INFO("[s3tp] Receiving command data...");
-			std::string command(&this->buf.get()[headersize]);
+			std::string command(this->buf.begin()+headersize, this->buf.begin()+headersize+len);
 			auto cmd = std::make_unique<ShellCommandReq>(command, true);
 			if (cmd.get() != nullptr) {
 			    // handle each command in the event handler
@@ -188,8 +177,7 @@ namespace horst {
 			    return;
 			}
 
-			this->buf_used = 0;
-			this->buf[0] = '\0';
+			this->buf.erase(this->buf.begin(), this->buf.begin() + headersize + this->expected);
 			this->expected = 0;
 		}
 	}

@@ -7,7 +7,6 @@
 namespace horst {
 
 class S3TPServer : public S3tpCallback {
-	static constexpr size_t max_buf_size = 4096;
 
 public:
 	S3TPServer(int, std::string);
@@ -39,12 +38,7 @@ private:
 	/**
 	 * Buffer for received data
 	 */
-	std::unique_ptr<char[]> buf;
-
-	/**
-	 * Number of bytes in buffer used
-	 */
-	size_t buf_used;
+	std::vector<char> buf;
 
 	/**
 	 * Number of bytes expected for command
