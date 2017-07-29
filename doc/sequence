@@ -1,0 +1,34 @@
+%% Sequence diagram of HORST
+sequenceDiagram
+    participant main
+    participant Satellite
+    participant DBusConnection
+    participant S3TPServer
+    participant State
+    participant Process
+    activate main
+    main->>+State: Initialize
+    State-->>-main: 
+    main->>+Satellite: Initiate
+    Satellite->>+DBusConnection: Initiate
+    Note over DBusConnection: Open D-Bus connection
+    DBusConnection-->>-Satellite: 
+    Satellite->>+S3TPServer: Initiate
+    Note over S3TPServer: Connect to S3TP
+    S3TPServer-->>-Satellite: 
+    Satellite-->>-main: Initialization done
+    loop libuv loop
+    main--x+DBusConnection: Incoming D-Bus call
+    Note over DBusConnection: Create Event
+    DBusConnection-->>-main: 
+    main->>+State: On new Event
+    Note over State: Process Logic Table
+    Note over State: Conditionally create Action(s)
+    State-->>-main: 
+    main->>+S3TPServer: On incoming S3TP message
+    Note over S3TPServer: Create Action
+    S3TPServer-->>-main: 
+    main->>+Process: Run Action
+    Process-->>-main: 
+    end
+    deactivate main
