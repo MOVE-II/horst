@@ -69,6 +69,7 @@ namespace horst {
 		// Reset internal buffer state
 		this->buf.clear();
 		this->expected = 0;
+		this->outbuf.clear();
 
 		// Try to connect
 		LOG_INFO("[s3tp] Try to reconnect...");
@@ -188,19 +189,52 @@ namespace horst {
 	void S3TPServer::send(const char* msg, uint32_t len) {
 		if (len == 0)
 			return;
-		LOG_INFO("[s3tp] Sending " + std::to_string(len) + " bytes");
+		LOG_INFO("[s3tp] Sending " + std::to_string(len) + " bytes of data");
 		if (!this->channel) {
 			LOG_WARN("[s3tp] Tried to send without open connection!");
 			return;
 		}
 
-		// Send header
-		this->channel->send((void*)&len, sizeof(len));
+		// Send old stuff first
+		if (this->outbuf.size() > 0) {
+			if (!this->send_buf()) {
+				// Append new data to buffer
+				this->outbuf.insert(this->outbuf.end(), msg, msg + len);
+				len += *((uint32_t*) this->outbuf.data());
+				std::memcpy(this->outbuf.data(), &len, sizeof(len));
+				return;
+			}
+			this->outbuf.clear();
+		}
 
-		// Send data
-		this->channel->send((void*)msg, len);
+		// Put length of data into first 4 bytes
+		this->outbuf.resize(sizeof(len));
+		std::memcpy(this->outbuf.data(), &len, sizeof(len));
+
+		// Append actual data
+		this->outbuf.insert(this->outbuf.end(), msg, msg + len);
+
+		// Try to send data
+		this->send_buf();
 
 		update_events();
+	}
+
+	bool S3TPServer::send_buf() {
+		int r = this->channel->send(this->outbuf.data(), this->outbuf.size());
+		if (r == ERROR_BUFFER_FULL) {
+			LOG_WARN("[s3tp] Buffer is full!");
+			if (this->process)
+				this->process->stop_output();
+			return false;
+		}
+		if (r < 0) {
+			LOG_WARN("[s3tp] Failed to send length!");
+			this->close();
+			return true;
+		}
+		this->outbuf.clear();
+		return true;
 	}
 
 	void S3TPServer::close() {
@@ -212,10 +246,14 @@ namespace horst {
 
 	void S3TPServer::onBufferFull(S3tpChannel&) {
 		LOG_INFO("[s3tp] Buffer is full");
+		if (this->process)
+			this->process->stop_output();
 	}
 
 	void S3TPServer::onBufferEmpty(S3tpChannel&) {
 		LOG_INFO("[s3tp] Buffer is empty");
+		if (this->process)
+			this->process->start_output(this);
 	}
 
 	void S3TPServer::onError(int error) {

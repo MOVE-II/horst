@@ -1,6 +1,7 @@
 #include "process.h"
 #include "horst.h"
 #include "satellite.h"
+#include "server/s3tp.h"
 
 #include <iostream>
 #include <cstring>
@@ -87,28 +88,27 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 
 		this->exited();
 	} else {
-		if (s3tp) {
-			uv_read_start((uv_stream_t*)&this->pipe_out, alloc_buffer, [](uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
-				if (nread > 0) {
-					if (nread + 1 > (ssize_t) buf->len) {
-						if (buf->base != NULL)
-							free(buf->base);
-						return;
-					}
-					buf->base[nread] = '\0';
-					satellite->get_s3tp()->send(buf->base, nread);
-					LOG_DEBUG("[process] output: " + std::string(buf->base));
-				} else {
-					if (nread == UV_EOF) {
-						LOG_DEBUG("[process] EOF");
-					}
-				}
-				if (buf->base != NULL)
-				    free(buf->base);
-			});
-		}
 		LOG_INFO("[process] launched process with id : "+ std::to_string(this->handle.pid));
 	}
+}
+
+void Process::read_callback(uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
+	if (nread > 0) {
+		if (nread + 1 > (ssize_t) buf->len) {
+			if (buf->base != NULL)
+				free(buf->base);
+			return;
+		}
+		buf->base[nread] = '\0';
+		satellite->get_s3tp()->send(buf->base, nread);
+		LOG_DEBUG("[process] output: " + std::string(buf->base));
+	} else {
+		if (nread == UV_EOF) {
+			LOG_DEBUG("[process] EOF");
+		}
+	}
+	if (buf->base != NULL)
+	    free(buf->base);
 }
 
 void Process::alloc_buffer(uv_handle_t*, size_t suggested_size, uv_buf_t* buf) {
@@ -124,7 +124,16 @@ void Process::exited() {
 }
 
 void Process::kill() {
-	// TODO
+	LOG_INFO("Killing command '" + this->cmd + "'");
+	uv_process_kill(&this->handle, SIGTERM);
+}
+
+void Process::start_output(S3TPServer* s3tp) {
+	uv_read_start((uv_stream_t*)&this->pipe_out, alloc_buffer, read_callback);
+}
+
+void Process::stop_output() {
+	uv_read_stop((uv_stream_t*)&this->pipe_out);
 }
 
 } // horst

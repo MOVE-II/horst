@@ -8,6 +8,7 @@
 
 namespace horst {
 
+
 class S3TPServer : public S3tpCallback {
 
 public:
@@ -67,7 +68,19 @@ private:
 	 */
 	std::unique_ptr<Process> process;
 
+	/**
+	 * Output buffer
+	 */
+	std::vector<char> outbuf;
+
 	void update_events();
+
+	/**
+	 * Try to send buffered data
+	 * Returns true, if successful or fatale error, returns false, if data
+	 * could not be sent and sending needs to be retried later
+	 */
+	bool send_buf();
 
 	/**
 	 * If not connected, try to re-establish

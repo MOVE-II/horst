@@ -8,6 +8,7 @@
 namespace horst {
 
 class Process;
+class S3TPServer;
 
 /**
  * Callback type for process exit notifications.
@@ -36,6 +37,16 @@ public:
 	 */
 	void kill();
 
+	/**
+	 * Start pushing output to S3TP
+	 */
+	void start_output(S3TPServer*);
+
+	/**
+	 * Do no longer push output to S3TP (will buffer instead)
+	 */
+	void stop_output();
+
 protected:
 	/**
 	 * called when the process exited.
@@ -62,6 +73,9 @@ protected:
 
 	/** Callback for pipe to allocate buffer */
 	static void alloc_buffer(uv_handle_t*, size_t, uv_buf_t*);
+
+	/** Callback for pipe to read stdout/err */
+	static void read_callback(uv_stream_t*, ssize_t, const uv_buf_t*);
 };
 
 } // horst
