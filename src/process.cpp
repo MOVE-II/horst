@@ -123,4 +123,8 @@ void Process::exited() {
 	}
 }
 
+void Process::kill() {
+	// TODO
+}
+
 } // horst

@@ -31,6 +31,11 @@ public:
 
 	virtual ~Process() = default;
 
+	/**
+	 * Kill process
+	 */
+	void kill();
+
 protected:
 	/**
 	 * called when the process exited.

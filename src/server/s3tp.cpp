@@ -1,4 +1,5 @@
 #include <s3tp/core/Logger.h>
+#include <sstream>
 
 #include "../event/req_shell_command.h"
 #include "../horst.h"
@@ -9,7 +10,8 @@ namespace horst {
 
 	S3TPServer::S3TPServer(int port, std::string socketpath)
 		: S3tpCallback(),
-	        expected{0} {
+		expected{0},
+		process{nullptr} {
 
 		s3tpSocketPath = strdup(socketpath.c_str());
 
@@ -59,6 +61,10 @@ namespace horst {
 		if (this->channel != NULL) {
 			return true;
 		}
+
+		// Cancel any running command
+		if (this->process)
+			this->process->kill();
 
 		// Reset internal buffer state
 		this->buf.clear();
@@ -159,17 +165,14 @@ namespace horst {
 		if (this->buf.size() >= this->expected + headersize) {
 			LOG_INFO("[s3tp] Receiving command data...");
 			std::string command(this->buf.begin()+headersize, this->buf.begin()+headersize+len);
-			auto cmd = std::make_unique<ShellCommandReq>(command, true);
-			if (cmd.get() != nullptr) {
-			    // handle each command in the event handler
-			    cmd->call_on_complete([this] (const std::string &result) {
-				    this->send(result.c_str(), result.length());
-				    });
-
-			    // actually handle the event in the satellite state logic
-			    satellite->on_event(std::move(cmd));
-
-			    // immediately send back that the command was received.
+			process = std::make_unique<Process>(this->loop, command, true, [this] (Process* process, long exit_code) {
+				// Return exit code
+				std::stringstream ss;
+				ss << "[exit] " << exit_code << std::endl;
+				this->send(ss.str().c_str(), ss.str().size());
+			});
+			if (process.get() != nullptr) {
+			    // Immediately send back that the command was received.
 			    this->send("ack", 3);
 			} else {
 			    LOG_WARN("[s3tp] Error while creating request, closing...");
