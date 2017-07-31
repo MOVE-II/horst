@@ -61,6 +61,10 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 				[] (uv_handle_t *) {}
 			);
 			uv_close(
+				(uv_handle_t*) &this_->pipe_err,
+				[] (uv_handle_t *) {}
+			);
+			uv_close(
 				(uv_handle_t*) &this_->pipe_in,
 				[] (uv_handle_t *) {}
 			);
@@ -75,6 +79,7 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	uv_stdio_container_t child_stdio[3];
 	if (s3tp) {
 		uv_pipe_init(loop, &this->pipe_out, 1);
+		uv_pipe_init(loop, &this->pipe_err, 1);
 		uv_pipe_init(loop, &this->pipe_in, 1);
 
 		this->options.stdio_count = 3;
@@ -82,8 +87,8 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 		child_stdio[0].data.stream = (uv_stream_t *) &this->pipe_in;
 		child_stdio[1].flags = (uv_stdio_flags) (UV_CREATE_PIPE | UV_WRITABLE_PIPE);
 		child_stdio[1].data.stream = (uv_stream_t *) &this->pipe_out;
-		child_stdio[2].flags = (uv_stdio_flags) (UV_WRITABLE_PIPE);
-		child_stdio[2].data.stream = (uv_stream_t *) &this->pipe_out;
+		child_stdio[2].flags = (uv_stdio_flags) (UV_CREATE_PIPE | UV_WRITABLE_PIPE);
+		child_stdio[2].data.stream = (uv_stream_t *) &this->pipe_err;
 		this->options.stdio = child_stdio;
 	}
 
@@ -118,7 +123,7 @@ void Process::read_callback(uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
 		}
 	}
 	if (buf->base != NULL)
-	    free(buf->base);
+		free(buf->base);
 }
 
 void Process::alloc_buffer(uv_handle_t*, size_t suggested_size, uv_buf_t* buf) {
@@ -140,10 +145,12 @@ void Process::kill() {
 
 void Process::start_output(S3TPServer* s3tp) {
 	uv_read_start((uv_stream_t*)&this->pipe_out, alloc_buffer, read_callback);
+	uv_read_start((uv_stream_t*)&this->pipe_err, alloc_buffer, read_callback);
 }
 
 void Process::stop_output() {
 	uv_read_stop((uv_stream_t*)&this->pipe_out);
+	uv_read_stop((uv_stream_t*)&this->pipe_err);
 }
 
 void Process::input(char* data, size_t len) {

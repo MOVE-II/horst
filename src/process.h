@@ -76,8 +76,11 @@ protected:
 	/** Last received signal */
 	int signal;
 
-	/** Pipe to redirect stdout and stderr of child process */
+	/** Pipe to redirect stdout of child process */
 	uv_pipe_t pipe_out;
+
+	/** Pipe to redirect stderr of child process */
+	uv_pipe_t pipe_err;
 
 	/** Pipe to redirect stdin of child process */
 	uv_pipe_t pipe_in;
