@@ -63,8 +63,22 @@ namespace horst {
 		}
 
 		// Cancel any running command
-		if (this->process)
+		if (this->process) {
+			LOG_INFO("Killing process....");
 			this->process->kill();
+
+			// Wait for kill
+			uv_timer_start(
+				&this->timer,
+				[] (uv_timer_t *handle) {
+					((S3TPServer*) handle->data)->process = nullptr;
+					((S3TPServer*) handle->data)->reconnect();
+				},
+				1 * 100, // time in milliseconds, try to reconnect every second
+				0         // don't repeat
+			);
+			return false;
+		}
 
 		// Reset internal buffer state
 		this->buf.clear();
@@ -75,7 +89,7 @@ namespace horst {
 		LOG_INFO("[s3tp] Try to reconnect...");
 		this->channel = std::make_unique<S3tpChannelEvent>(this->s3tp_cfg, *this);
 
-		//Bind channel to S3TP daemon
+		// Bind channel to S3TP daemon
 		this->channel->bind(error);
 		if (error == 0) {
 			r = this->channel->accept();
@@ -97,7 +111,7 @@ namespace horst {
 					// we just care for its -> data member anyway.
 					((S3TPServer*) handle->data)->reconnect();
 				},
-				1 * 1000, // time in milliseconds, try to reconnect every second
+				5 * 1000, // time in milliseconds, try to reconnect every second
 				0         // don't repeat
 			);
 
@@ -132,7 +146,7 @@ namespace horst {
 	}
 
 	void S3TPServer::onDisconnected(S3tpChannel&, int error) {
-		LOG_WARN("[s3tp] S3TP disconnected with error " + std::to_string(error));
+		LOG_WARN("[s3tp] S3TP disconnected (" + std::to_string(error) + ")");
 		uv_poll_stop(&this->connection);
 		this->channel = NULL;
 		this->reconnect();
@@ -164,21 +178,30 @@ namespace horst {
 
 		// Receive data
 		if (this->buf.size() >= this->expected + headersize) {
-			LOG_INFO("[s3tp] Receiving command data...");
-			std::string command(this->buf.begin()+headersize, this->buf.begin()+headersize+len);
-			process = std::make_unique<Process>(this->loop, command, true, [this] (Process* process, long exit_code) {
-				// Return exit code
-				std::stringstream ss;
-				ss << "[exit] " << exit_code << std::endl;
-				this->send(ss.str().c_str(), ss.str().size());
-			});
-			if (process.get() != nullptr) {
-			    // Immediately send back that the command was received.
-			    this->send("ack", 3);
+			if (this->process) {
+				LOG_INFO("[s3tp] Receiving input data...");
+				this->process->input(this->buf.data()+headersize, this->expected);
 			} else {
-			    LOG_WARN("[s3tp] Error while creating request, closing...");
-			    this->close();
-			    return;
+				LOG_INFO("[s3tp] Receiving command data...");
+				std::string command(this->buf.begin()+headersize, this->buf.begin()+headersize+this->expected);
+				process = std::make_unique<Process>(this->loop, command, true, [this] (Process* process, long exit_code) {
+
+					// Return exit code
+					std::stringstream ss;
+					ss << "[exit] " << exit_code << std::endl;
+					this->send(ss.str().c_str(), ss.str().size());
+
+					this->process = nullptr;
+					this->close();
+				});
+				if (process.get() != nullptr) {
+					// Immediately send back that the command was received.
+					this->send("ack", 3);
+				} else {
+					LOG_WARN("[s3tp] Error while creating request, closing...");
+					this->close();
+					return;
+				}
 			}
 
 			this->buf.erase(this->buf.begin(), this->buf.begin() + headersize + this->expected);
@@ -231,7 +254,7 @@ namespace horst {
 		if (r < 0) {
 			LOG_WARN("[s3tp] Failed to send length!");
 			this->close();
-			return true;
+			return false;
 		}
 		this->outbuf.clear();
 		return true;

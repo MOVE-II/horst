@@ -47,6 +47,11 @@ public:
 	 */
 	void stop_output();
 
+	/**
+	 * Forward data to stdin of process
+	 */
+	void input(char*, size_t);
+
 protected:
 	/**
 	 * called when the process exited.
@@ -68,8 +73,14 @@ protected:
 	/** process exit code. is -1 if the processes did not exit yet. */
 	int64_t exit_code;
 
+	/** Last received signal */
+	int signal;
+
 	/** Pipe to redirect stdout and stderr of child process */
 	uv_pipe_t pipe_out;
+
+	/** Pipe to redirect stdin of child process */
+	uv_pipe_t pipe_in;
 
 	/** Callback for pipe to allocate buffer */
 	static void alloc_buffer(uv_handle_t*, size_t, uv_buf_t*);
