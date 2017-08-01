@@ -45,7 +45,7 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 		uv_close(
 			(uv_handle_t*) req,
 			[] (uv_handle_t *handle) {
-				Process *this_ = (Process *) handle->data;
+				auto this_ = (Process*) handle->data;
 				if (this_->signal != SIGTERM) {
 				    // Only run exit, if we are not killed
 				    this_->exited();

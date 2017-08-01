@@ -26,7 +26,7 @@ namespace horst {
 	}
 
 	void S3TPServer::on_s3tp_event(uv_poll_t *handle, int, int events) {
-		S3TPServer *s3tp_link_ref = ((S3TPServer *)handle->data);
+		auto s3tp_link_ref = (S3TPServer*) handle->data;
 
 		if (s3tp_link_ref->channel != nullptr && events & UV_READABLE) {
 			s3tp_link_ref->channel->handleIncomingData();
@@ -71,10 +71,11 @@ namespace horst {
 			uv_timer_start(
 				&this->timer,
 				[] (uv_timer_t *handle) {
-					((S3TPServer*) handle->data)->process = nullptr;
-					((S3TPServer*) handle->data)->reconnect();
+					auto srv = (S3TPServer*) handle->data;
+					srv->process = nullptr;
+					srv->reconnect();
 				},
-				1 * 100, // time in milliseconds, try to reconnect every second
+				1 * 100, // time in milliseconds, just wait for the next libuv event loop cycle
 				0         // don't repeat
 			);
 			return false;
@@ -109,7 +110,8 @@ namespace horst {
 				[] (uv_timer_t *handle) {
 					// yes, handle is not a poll_t, but
 					// we just care for its -> data member anyway.
-					((S3TPServer*) handle->data)->reconnect();
+					auto srv = (S3TPServer*) handle->data;
+					srv->reconnect();
 				},
 				5 * 1000, // time in milliseconds, try to reconnect every second
 				0         // don't repeat
