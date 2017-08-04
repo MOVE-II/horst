@@ -64,10 +64,7 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 				(uv_handle_t*) &this_->pipe_err,
 				[] (uv_handle_t *) {}
 			);
-			uv_close(
-				(uv_handle_t*) &this_->pipe_in,
-				[] (uv_handle_t *) {}
-			);
+			this_->close_input();
 			this_->options.stdio_count = 0;
 		}
 	};
@@ -80,6 +77,8 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	if (s3tp) {
 		uv_pipe_init(loop, &this->pipe_out, 1);
 		uv_pipe_init(loop, &this->pipe_err, 1);
+
+		has_in = true;
 		uv_pipe_init(loop, &this->pipe_in, 1);
 
 		this->options.stdio_count = 3;
@@ -148,6 +147,12 @@ void Process::stop_output() {
 }
 
 void Process::input(char* data, size_t len) {
+	if (!has_in)
+	{
+		LOG_WARN("Can't write, pipe_in is closed!");
+		return;
+	}
+
 	uv_write_t *req = (uv_write_t*) malloc(sizeof(uv_write_t));
 	if (req == NULL) {
 	    LOG_WARN("Could not malloc uv_write_t. Out of memory!");
@@ -166,6 +171,17 @@ void Process::input(char* data, size_t len) {
 		free(req->data);
 		free(req);
 	});
+}
+
+void Process::close_input() {
+	if (!has_in)
+		return;
+
+	has_in = false;
+	uv_close(
+		(uv_handle_t*) &this->pipe_in,
+		[] (uv_handle_t *) {}
+	);
 }
 
 } // horst

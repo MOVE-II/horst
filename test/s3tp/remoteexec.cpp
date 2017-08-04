@@ -87,15 +87,20 @@ class RemoteexecCallback : public S3tpCallback {
 };
 
 bool writeData(S3tpChannel& channel, std::string line) {
+	int r;
     uint32_t len = line.length();
 
     // Send length of data
-    if (channel.send(&len, sizeof(len)) <= 0) {
+    r = channel.send(&len, sizeof(len));
+    if (r <= 0) {
+		LOG_ERROR("Error " + std::to_string(r) + " occurred while sending data over the channel. Quitting.");
         return false;
     }
 
     // Send data
-    if (channel.send(&line[0], len) <= 0) {
+    r = channel.send(&line[0], len);
+    if (r <= 0) {
+		LOG_ERROR("Error " + std::to_string(r) + " occurred while sending data over the channel. Quitting.");
         return false;
     }
 
@@ -150,25 +155,38 @@ int main(int argc, char* argv[]) {
     LOG_DEBUG("Payload sent. Waiting for reply....");
 
     // Wait for input on stdin and send to HORST
+    bool has_in = true;
     while (running) {
-	struct timeval tv;
-	fd_set fds;
-	tv.tv_sec = 1;
-	tv.tv_usec = 0;
-	FD_ZERO(&fds);
-	FD_SET(STDIN_FILENO, &fds);
-	int ret = select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
-	if (ret < 0) {
-	    throw std::runtime_error("Failed to read from stdin!");
-	}
-	if (FD_ISSET(STDIN_FILENO, &fds)) {
-	    std::getline(std::cin, command);
-	    if (!writeData(channel, command + "\n")) {
-		LOG_ERROR("An error occurred while sending data over the channel. Quitting.");
-		return 1;
-	    }
-	    command.clear();
-	}
+		struct timeval tv;
+		fd_set fds;
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+		FD_ZERO(&fds);
+		if (has_in)
+			FD_SET(STDIN_FILENO, &fds);
+		int ret = select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+		if (ret < 0) {
+		    throw std::runtime_error("Failed to read from stdin!");
+		}
+		if (FD_ISSET(STDIN_FILENO, &fds)) {
+			command.resize(1<<16);
+			int n = read(0, (char*)command.data(), command.size());
+			if (n < 0)
+			{
+				LOG_ERROR("An error occurred while reading data from stdin. Quitting.");
+				return 1;
+			}
+			command.resize(n);
+			if (command.empty())
+			{
+				LOG_INFO("EOF");
+				command = "[eof]";
+				has_in = false;
+			}
+			if (command.size())
+			    if (!writeData(channel, command))
+			    	return 1;
+		}
     }
     LOG_INFO("Quitting.");
 

@@ -154,6 +154,14 @@ namespace horst {
 		this->reconnect();
 	}
 
+	bool S3TPServer::compare_to_buf(const std::string& str)
+	{
+		if (this->buf.size() < sizeof(this->expected))
+			return false;
+
+		return std::equal(buf.begin() + sizeof(this->expected), buf.end(), str.begin(), str.end());
+	}
+
 	void S3TPServer::onDataReceived(S3tpChannel&, char *data, size_t len) {
 		const size_t headersize = sizeof(this->expected);
 		LOG_INFO("[s3tp] Received " + std::to_string(len) + " bytes");
@@ -181,8 +189,16 @@ namespace horst {
 		// Receive data
 		if (this->buf.size() >= this->expected + headersize) {
 			if (this->process) {
-				LOG_INFO("[s3tp] Receiving input data...");
-				this->process->input(this->buf.data()+headersize, this->expected);
+				if (compare_to_buf("[eof]"))
+				{
+					LOG_INFO("[s3tp] Received EOF");
+					this->process->close_input();
+				}
+				else
+				{
+					LOG_INFO("[s3tp] Receiving input data...");
+					this->process->input(this->buf.data()+headersize, this->expected);
+				}
 			} else {
 				LOG_INFO("[s3tp] Receiving command data...");
 				std::string command(this->buf.begin()+headersize, this->buf.begin()+headersize+this->expected);

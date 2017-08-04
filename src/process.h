@@ -52,6 +52,11 @@ public:
 	 */
 	void input(char*, size_t);
 
+	/**
+	 * Closes the input-pipe if it exists
+	 */
+	void close_input();
+
 protected:
 	/**
 	 * called when the process exited.
@@ -81,6 +86,9 @@ protected:
 
 	/** Pipe to redirect stderr of child process */
 	uv_pipe_t pipe_err;
+
+	/** Flag is true when pipe_in is open */
+	bool has_in;
 
 	/** Pipe to redirect stdin of child process */
 	uv_pipe_t pipe_in;

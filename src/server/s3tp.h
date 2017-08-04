@@ -87,6 +87,11 @@ private:
 	 */
 	bool reconnect();
 
+	/**
+	 * Returns true when buf contains the string in the message payload
+	 */
+	bool compare_to_buf(const std::string& str);
+
 	// S3TP event callbacks
 	void onConnected(S3tpChannel &channel) override;
 	void onDisconnected(S3tpChannel &channel, int error) override;
