@@ -188,13 +188,16 @@ namespace horst {
 				std::string command(this->buf.begin()+headersize, this->buf.begin()+headersize+this->expected);
 				process = std::make_unique<Process>(this->loop, command, true, [this] (Process* process, long exit_code) {
 
+					LOG_INFO("[s3tp] process caboomed...");
 					// Return exit code
 					std::stringstream ss;
 					ss << "[exit] " << exit_code << std::endl;
 					this->send(ss.str().c_str(), ss.str().size());
 
 					this->process = nullptr;
-					this->close();
+
+					// perform soft-close, so that s3tp will still send out remaining buffered data
+					(void) this->channel->disconnect();
 				});
 				if (process.get() != nullptr) {
 					// Immediately send back that the command was received.
@@ -246,6 +249,7 @@ namespace horst {
 	}
 
 	bool S3TPServer::send_buf() {
+		LOG_INFO("buf: " + std::to_string(this->outbuf.size()));
 		int r = this->channel->send(this->outbuf.data(), this->outbuf.size());
 		if (r == ERROR_BUFFER_FULL) {
 			LOG_WARN("[s3tp] Buffer is full!");
