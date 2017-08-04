@@ -109,14 +109,8 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 
 void Process::read_callback(uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
 	if (nread > 0) {
-		if (nread + 1 > (ssize_t) buf->len) {
-			if (buf->base != NULL)
-				free(buf->base);
-			return;
-		}
-		buf->base[nread] = '\0';
 		satellite->get_s3tp()->send(buf->base, nread);
-		LOG_DEBUG("[process] output: " + std::string(buf->base));
+		LOG_DEBUG("[process] output: " + std::string(buf->base, buf->base+nread));
 	} else {
 		if (nread == UV_EOF) {
 			LOG_DEBUG("[process] EOF");
