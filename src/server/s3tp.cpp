@@ -249,7 +249,6 @@ namespace horst {
 	}
 
 	bool S3TPServer::send_buf() {
-		LOG_INFO("buf: " + std::to_string(this->outbuf.size()));
 		int r = this->channel->send(this->outbuf.data(), this->outbuf.size());
 		if (r == ERROR_BUFFER_FULL) {
 			LOG_WARN("[s3tp] Buffer is full!");
