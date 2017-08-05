@@ -1,5 +1,8 @@
-#include <s3tp/connector/S3tpChannelSync.h>
+#include <condition_variable>
 #include <fstream>
+#include <mutex>
+#include <s3tp/connector/S3tpCallback.h>
+#include <s3tp/connector/S3tpChannelAsync.h>
 
 
 const std::string SUB_COMPONENT = "S3TP";
@@ -9,46 +12,108 @@ const uint8_t PORT_HORST = 99;
 const uint8_t PORT_LOCAL = 17;
 const char* SOCKETPATH = "/tmp/s3tp.a";
 
+bool volatile running = true;
+std::mutex asyncMutex;
+std::condition_variable asyncCond;
+
+class RemoteexecCallback : public S3tpCallback {
+
+    /**
+     * Buffer for received data
+     */
+    std::vector<char> buf;
+
+    /**
+     * Number of bytes expected for command
+     */
+    uint32_t expected;
+
+    /**
+     * Handle incoming data
+     */
+    void onDataReceived(S3tpChannel &channel, char *data, size_t len) override {
+	const size_t headersize = sizeof(this->expected);
+
+	// Copy data into buffer
+	this->buf.insert(this->buf.end(), data, data + len);
+
+	// Not enough data yet
+	if (this->buf.size() < headersize) {
+		LOG_DEBUG("[s3tp] Not enough data received, waiting for more...");
+		return;
+	}
+
+	// Receive header
+	if (this->expected == 0) {
+		LOG_DEBUG("[s3tp] Receiving new command...");
+		std::memcpy(&this->expected, this->buf.data(), headersize);
+		if (this->expected == 0) {
+		    throw std::runtime_error("Invalid length received!");
+		    return;
+		}
+	}
+
+	// Wait until all data of packet are received
+	if (this->buf.size() < this->expected + headersize) {
+		return;
+	}
+
+	std::string indata(this->buf.begin()+headersize, this->buf.begin()+headersize+this->expected);
+
+	if (indata.compare("ack") == 0) {
+	    LOG_INFO("HORST has received the command.");
+	} else if (indata.compare(0, 7, "[exit] ") == 0) {
+	    LOG_INFO("Command completed with exit status: " + std::string(indata));
+	    running = false;
+	} else {
+	    std::cout << indata;
+	}
+
+	this->buf.erase(this->buf.begin(), this->buf.begin() + headersize + this->expected);
+	this->expected = 0;
+    }
+
+    void onConnected(S3tpChannel &channel) override {
+	LOG_INFO("Connection to HORST established successfully.");
+	asyncCond.notify_all();
+    }
+    void onDisconnected(S3tpChannel &channel, int error) override {
+	LOG_INFO("HORST closed the connection.");
+	running = false;
+    }
+    void onBufferFull(S3tpChannel& channel) override {}
+    virtual void onBufferEmpty(S3tpChannel& channel) override {}
+    void onError(int error) override {}
+};
+
 bool writeData(S3tpChannel& channel, std::string line) {
+	int r;
     uint32_t len = line.length();
 
     // Send length of data
-    if (channel.send(&len, sizeof(len)) <= 0) {
+    r = channel.send(&len, sizeof(len));
+    if (r <= 0) {
+		LOG_ERROR("Error " + std::to_string(r) + " occurred while sending data over the channel. Quitting.");
         return false;
     }
 
     // Send data
-    if (channel.send(&line[0], len) <= 0) {
+    r = channel.send(&line[0], len);
+    if (r <= 0) {
+		LOG_ERROR("Error " + std::to_string(r) + " occurred while sending data over the channel. Quitting.");
         return false;
     }
 
     return true;
 }
 
-std::string readData(S3tpChannel& channel, uint32_t& len) {
-    int error;
-
-    // Read length of data
-    error = channel.recv(&len, sizeof(len));
-    if (error <= 0) {
-        throw std::runtime_error("Could not read length! (error=" + std::to_string(error) + ")");
-    }
-
-    // Read data
-    std::string data(len, 0);
-    error = channel.recv(&data[0], len);
-    if (error <= 0) {
-        throw std::runtime_error("Could not read data! (error=" + std::to_string(error) + ")");
-    }
-
-    return data;
-}
-
 int main(int argc, char* argv[]) {
     if (argc <= 1) {
-        std::cout << "Usage: remoteexec <your command>" << std::endl;
-        return 0;
+	std::cout << "Usage: remoteexec <your command>" << std::endl;
+	return 0;
     }
+
+    std::unique_lock<std::mutex> lock{asyncMutex};
 
     std::string command = "";
     for (int i = 1; i < argc; i++) {
@@ -64,9 +129,10 @@ int main(int argc, char* argv[]) {
     config.channel = 3;
     config.options = S3TP_OPTION_ARQ;
 
-    // Synchronous mode
+    // Asynchronous mode
     LOG_DEBUG("Binding...");
-    S3tpChannelSync channel(config);
+    RemoteexecCallback cb;
+    S3tpChannelAsync channel(config, cb);
     channel.bind(error);
     if (error != 0) {
 	LOG_ERROR("Couldn't bind to port " + std::to_string(PORT_LOCAL) + " due to error " + std::to_string(error));
@@ -79,7 +145,7 @@ int main(int argc, char* argv[]) {
 	LOG_ERROR("Could not connect to HORST on port " + std::to_string(PORT_HORST));
 	return 1;
     }
-    LOG_INFO("Connection to HORST established.");
+    asyncCond.wait(lock);
 
     // Write command
     if (!writeData(channel, command + "\n")) {
@@ -88,24 +154,45 @@ int main(int argc, char* argv[]) {
     }
     LOG_DEBUG("Payload sent. Waiting for reply....");
 
-    while (true) {
-	uint32_t len = 0;
-	std::string rcvData = readData(channel, len);
-	if (rcvData.compare("ack") == 0) {
-		LOG_INFO("HORST has received the command.");
-		continue;
-	}
-	if (rcvData.compare(0, 7, "[exit] ") == 0) {
-		LOG_INFO("Command completed with exit status: " + std::string(rcvData));
-		break;
-	}
-	std::cout << rcvData;
+    // Wait for input on stdin and send to HORST
+    bool has_in = true;
+    while (running) {
+		struct timeval tv;
+		fd_set fds;
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+		FD_ZERO(&fds);
+		if (has_in)
+			FD_SET(STDIN_FILENO, &fds);
+		int ret = select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+		if (ret < 0) {
+		    throw std::runtime_error("Failed to read from stdin!");
+		}
+		if (FD_ISSET(STDIN_FILENO, &fds)) {
+			command.resize(1<<16);
+			int n = read(0, (char*)command.data(), command.size());
+			if (n < 0)
+			{
+				LOG_ERROR("An error occurred while reading data from stdin. Quitting.");
+				return 1;
+			}
+			command.resize(n);
+			if (command.empty())
+			{
+				LOG_INFO("EOF");
+				command = "[eof]";
+				has_in = false;
+			}
+			if (command.size())
+			    if (!writeData(channel, command))
+			    	return 1;
+		}
     }
+    LOG_INFO("Quitting.");
 
     if (channel.isConnected()) {
 	channel.disconnect();
     }
-    LOG_DEBUG("Quitting.");
 
     return 0;
 }

@@ -3,8 +3,11 @@
 #include <s3tp/connector/S3tpChannelEvent.h>
 #include <uv.h>
 
+#include "../process.h"
+
 
 namespace horst {
+
 
 class S3TPServer : public S3tpCallback {
 
@@ -15,7 +18,7 @@ public:
 	static void on_s3tp_event(uv_poll_t*, int, int);
 
 	/**
-	 * Start s3tp server
+	 * Start S3TP server
 	 */
 	bool start(uv_loop_t*);
 
@@ -26,12 +29,12 @@ public:
 
 private:
 	/**
-	 * s3tp connection configurations
+	 * S3TP connection configurations
 	 */
 	ClientConfig s3tp_cfg;
 
 	/**
-	 * s3tp connection handle
+	 * S3TP connection handle
 	 */
 	std::unique_ptr<S3tpChannelEvent> channel;
 
@@ -51,7 +54,7 @@ private:
 	uv_loop_t *loop;
 
 	/**
-	 * s3tp connection
+	 * S3TP connection
 	 */
 	uv_poll_t connection;
 
@@ -60,14 +63,36 @@ private:
 	 */
 	uv_timer_t timer;
 
+	/**
+	 * Currently running process for user shell command
+	 */
+	std::unique_ptr<Process> process;
+
+	/**
+	 * Output buffer
+	 */
+	std::vector<char> outbuf;
+
 	void update_events();
+
+	/**
+	 * Try to send buffered data
+	 * Returns true, if successful or fatale error, returns false, if data
+	 * could not be sent and sending needs to be retried later
+	 */
+	bool send_buf();
 
 	/**
 	 * If not connected, try to re-establish
 	 */
 	bool reconnect();
 
-	// s3tp event callbacks
+	/**
+	 * Returns true when buf contains the string in the message payload
+	 */
+	bool compare_to_buf(const std::string& str);
+
+	// S3TP event callbacks
 	void onConnected(S3tpChannel &channel) override;
 	void onDisconnected(S3tpChannel &channel, int error) override;
 	void onDataReceived(S3tpChannel &channel, char *data, size_t len) override;
