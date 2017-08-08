@@ -1,63 +1,119 @@
-#include <s3tp/connector/S3tpChannelSync.h>
+#include <condition_variable>
 #include <fstream>
+#include <mutex>
+#include <s3tp/connector/S3tpCallback.h>
+#include <s3tp/connector/S3tpChannelAsync.h>
 
 
 const std::string SUB_COMPONENT = "S3TP";
 const bool TIMESTAMP_ENABLED = false;
 
 const uint8_t PORT_HORST = 99;
-const uint8_t PORT_LOCAL = 4000;
-char* SOCKETPATH = "/tmp/s3tp4000";
+const uint8_t PORT_LOCAL = 17;
+const char* SOCKETPATH = "/tmp/s3tp.a";
 
+bool volatile running = true;
+std::mutex asyncMutex;
+std::condition_variable asyncCond;
 
-const size_t bufferSize = 4096;
-char buffer[4096];
+class RemoteexecCallback : public S3tpCallback {
+
+    /**
+     * Buffer for received data
+     */
+    std::vector<char> buf;
+
+    /**
+     * Number of bytes expected for command
+     */
+    uint32_t expected;
+
+    /**
+     * Handle incoming data
+     */
+    void onDataReceived(S3tpChannel &channel, char *data, size_t len) override {
+	const size_t headersize = sizeof(this->expected);
+
+	// Copy data into buffer
+	this->buf.insert(this->buf.end(), data, data + len);
+
+	// Not enough data yet
+	if (this->buf.size() < headersize) {
+		LOG_DEBUG("[s3tp] Not enough data received, waiting for more...");
+		return;
+	}
+
+	// Receive header
+	if (this->expected == 0) {
+		LOG_DEBUG("[s3tp] Receiving new command...");
+		std::memcpy(&this->expected, this->buf.data(), headersize);
+		if (this->expected == 0) {
+		    throw std::runtime_error("Invalid length received!");
+		    return;
+		}
+	}
+
+	// Wait until all data of packet are received
+	if (this->buf.size() < this->expected + headersize) {
+		return;
+	}
+
+	std::string indata(this->buf.begin()+headersize, this->buf.begin()+headersize+this->expected);
+
+	if (indata.compare("ack") == 0) {
+	    LOG_INFO("HORST has received the command.");
+	} else if (indata.compare(0, 7, "[exit] ") == 0) {
+	    LOG_INFO("Command completed with exit status: " + std::string(indata));
+	    running = false;
+	} else {
+	    std::cout << indata;
+	}
+
+	this->buf.erase(this->buf.begin(), this->buf.begin() + headersize + this->expected);
+	this->expected = 0;
+    }
+
+    void onConnected(S3tpChannel &channel) override {
+	LOG_INFO("Connection to HORST established successfully.");
+	asyncCond.notify_all();
+    }
+    void onDisconnected(S3tpChannel &channel, int error) override {
+	LOG_INFO("HORST closed the connection.");
+	running = false;
+    }
+    void onBufferFull(S3tpChannel& channel) override {}
+    virtual void onBufferEmpty(S3tpChannel& channel) override {}
+    void onError(int error) override {}
+};
 
 bool writeData(S3tpChannel& channel, std::string line) {
-    size_t toWrite = 0;
-    size_t i = 0;
-    size_t len = line.length();
+	int r;
+    uint32_t len = line.length();
 
-    // Send length of msg
-    if (channel.send(&len, sizeof(len)) <= 0) {
+    // Send length of data
+    r = channel.send(&len, sizeof(len));
+    if (r <= 0) {
+		LOG_ERROR("Error " + std::to_string(r) + " occurred while sending data over the channel. Quitting.");
         return false;
     }
 
-    // Send command
-    const char * data = line.data();
-    while (i < len) {
-        toWrite = (size_t) std::min(bufferSize, len);
-        memcpy(buffer + i, data, toWrite);
-        if (channel.send(buffer, toWrite) <= 0) {
-            return false;
-        }
-        i += toWrite;
+    // Send data
+    r = channel.send(&line[0], len);
+    if (r <= 0) {
+		LOG_ERROR("Error " + std::to_string(r) + " occurred while sending data over the channel. Quitting.");
+        return false;
     }
 
     return true;
 }
 
-char * readData(S3tpChannel& channel, size_t& len) {
-    char * readBuffer;
-
-    if (channel.recv(&len, sizeof(len)) <= 0) {
-        return nullptr;
-    }
-    readBuffer = new char[len + 1];
-    if (channel.recv(readBuffer, len) <= 0) {
-        delete [] readBuffer;
-        return nullptr;
-    }
-    readBuffer[len] = '\0';
-
-    return readBuffer;
-}
-
 int main(int argc, char* argv[]) {
     if (argc <= 1) {
-        std::cout << "Usage: remoteexec <your command>" << std::endl;
-        return 0;
+	std::cout << "Usage: remoteexec <your command>" << std::endl;
+	return 0;
     }
+
+    std::unique_lock<std::mutex> lock{asyncMutex};
 
     std::string command = "";
     for (int i = 1; i < argc; i++) {
@@ -73,49 +129,70 @@ int main(int argc, char* argv[]) {
     config.channel = 3;
     config.options = S3TP_OPTION_ARQ;
 
-    // Synchronous mode
-    S3tpChannelSync channel(config);
+    // Asynchronous mode
+    LOG_DEBUG("Binding...");
+    RemoteexecCallback cb;
+    S3tpChannelAsync channel(config, cb);
     channel.bind(error);
     if (error != 0) {
-	std::cerr << "Couldn't bind to port " << std::to_string(PORT_LOCAL)
-	    << ", due to error " << std::to_string(error) << std::endl;
+	LOG_ERROR("Couldn't bind to port " + std::to_string(PORT_LOCAL) + " due to error " + std::to_string(error));
 	return 1;
     }
-    sleep(1);
 
     // Connect
+    LOG_DEBUG("Connecting...");
     if (channel.connect(PORT_HORST) < 0) {
-	std::cerr << "Could not connect to HORST on port " << std::to_string(PORT_HORST) << std::endl;
+	LOG_ERROR("Could not connect to HORST on port " + std::to_string(PORT_HORST));
 	return 1;
     }
-    std::cout << "Connection to other endpoint established" << std::endl;
+    asyncCond.wait(lock);
 
     // Write command
     if (!writeData(channel, command + "\n")) {
-	std::cerr << "An error occurred while sending data over the channel. Quitting" << std::endl;
+	LOG_ERROR("An error occurred while sending data over the channel. Quitting.");
 	return 1;
     }
-    std::cout << "Payload sent. Waiting for reply..." << std::endl;
+    LOG_DEBUG("Payload sent. Waiting for reply....");
 
-    while (true) {
-	size_t len = 0;
-	char* rcvData = readData(channel, len);
-	if (rcvData == nullptr) {
-	    std::cout << "An error occurred while reading data from the channel. Quitting" << std::endl;
-	    return 1;
-	}
-	std::cout << "Received message: " << std::string(rcvData) << std::endl;
-	if (strncmp(rcvData, "[exit] ", 6) == 0) {
-		delete [] rcvData;
-		break;
-	}
-	delete [] rcvData;
+    // Wait for input on stdin and send to HORST
+    bool has_in = true;
+    while (running) {
+		struct timeval tv;
+		fd_set fds;
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+		FD_ZERO(&fds);
+		if (has_in)
+			FD_SET(STDIN_FILENO, &fds);
+		int ret = select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+		if (ret < 0) {
+		    throw std::runtime_error("Failed to read from stdin!");
+		}
+		if (FD_ISSET(STDIN_FILENO, &fds)) {
+			command.resize(1<<16);
+			int n = read(0, (char*)command.data(), command.size());
+			if (n < 0)
+			{
+				LOG_ERROR("An error occurred while reading data from stdin. Quitting.");
+				return 1;
+			}
+			command.resize(n);
+			if (command.empty())
+			{
+				LOG_INFO("EOF");
+				command = "[eof]";
+				has_in = false;
+			}
+			if (command.size())
+			    if (!writeData(channel, command))
+			    	return 1;
+		}
     }
+    LOG_INFO("Quitting.");
 
     if (channel.isConnected()) {
 	channel.disconnect();
     }
-    std::cout << "Quitting..." << std::endl;
 
     return 0;
 }

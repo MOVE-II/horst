@@ -1,4 +1,5 @@
 #include <s3tp/core/Logger.h>
+#include <sstream>
 
 #include "../event/req_shell_command.h"
 #include "../horst.h"
@@ -9,9 +10,8 @@ namespace horst {
 
 	S3TPServer::S3TPServer(int port, std::string socketpath)
 		: S3tpCallback(),
-		buf{std::make_unique<char[]>(this->max_buf_size)},
-		buf_used{0},
-	        expected{0} {
+		expected{0},
+		process{nullptr} {
 
 		s3tpSocketPath = strdup(socketpath.c_str());
 
@@ -26,7 +26,7 @@ namespace horst {
 	}
 
 	void S3TPServer::on_s3tp_event(uv_poll_t *handle, int, int events) {
-		S3TPServer *s3tp_link_ref = ((S3TPServer *)handle->data);
+		auto s3tp_link_ref = (S3TPServer*) handle->data;
 
 		if (s3tp_link_ref->channel != nullptr && events & UV_READABLE) {
 			s3tp_link_ref->channel->handleIncomingData();
@@ -62,14 +62,35 @@ namespace horst {
 			return true;
 		}
 
+		// Cancel any running command
+		if (this->process) {
+			LOG_INFO("Killing process....");
+			this->process->kill();
+
+			// Wait for kill
+			uv_timer_start(
+				&this->timer,
+				[] (uv_timer_t *handle) {
+					auto srv = (S3TPServer*) handle->data;
+					srv->process = nullptr;
+					srv->reconnect();
+				},
+				1 * 100, // time in milliseconds, just wait for the next libuv event loop cycle
+				0         // don't repeat
+			);
+			return false;
+		}
+
 		// Reset internal buffer state
-		this->buf_used = 0;
+		this->buf.clear();
+		this->expected = 0;
+		this->outbuf.clear();
 
 		// Try to connect
 		LOG_INFO("[s3tp] Try to reconnect...");
 		this->channel = std::make_unique<S3tpChannelEvent>(this->s3tp_cfg, *this);
 
-		//Bind channel to S3TP daemon
+		// Bind channel to S3TP daemon
 		this->channel->bind(error);
 		if (error == 0) {
 			r = this->channel->accept();
@@ -89,9 +110,10 @@ namespace horst {
 				[] (uv_timer_t *handle) {
 					// yes, handle is not a poll_t, but
 					// we just care for its -> data member anyway.
-					((S3TPServer*) handle->data)->reconnect();
+					auto srv = (S3TPServer*) handle->data;
+					srv->reconnect();
 				},
-				1 * 1000, // time in milliseconds, try to reconnect every second
+				5 * 1000, // time in milliseconds, try to reconnect every second
 				0         // don't repeat
 			);
 
@@ -122,90 +144,141 @@ namespace horst {
 	}
 
 	void S3TPServer::onConnected(S3tpChannel&) {
-		LOG_DEBUG("[s3tp] Connection is active");
+		LOG_INFO("[s3tp] Connection is active");
 	}
 
 	void S3TPServer::onDisconnected(S3tpChannel&, int error) {
-		LOG_WARN("[s3tp] S3TP disconnected with error " + std::to_string(error));
+		LOG_WARN("[s3tp] S3TP disconnected (" + std::to_string(error) + ")");
 		uv_poll_stop(&this->connection);
 		this->channel = NULL;
 		this->reconnect();
 	}
 
+	bool S3TPServer::compare_to_buf(const std::string& str)
+	{
+		if (this->buf.size() < sizeof(this->expected))
+			return false;
+
+		return std::equal(buf.begin() + sizeof(this->expected), buf.end(), str.begin(), str.end());
+	}
+
 	void S3TPServer::onDataReceived(S3tpChannel&, char *data, size_t len) {
-		LOG_DEBUG("[s3tp] Received " + std::to_string(len) + " bytes");
+		const size_t headersize = sizeof(this->expected);
+		LOG_INFO("[s3tp] Received " + std::to_string(len) + " bytes");
+
+		// Copy data into buffer
+		this->buf.insert(this->buf.end(), data, data + len);
+
+		// Not enough data yet
+		if (this->buf.size() < headersize) {
+			LOG_DEBUG("[s3tp] Not enough data received, waiting for more...");
+			return;
+		}
 
 		// Receive header
 		if (this->expected == 0) {
 			LOG_DEBUG("[s3tp] Receiving new command...");
-			const size_t headersize = sizeof(size_t);
-			std::memcpy(&this->expected, data, headersize);
-
-			// Forward data pointer
-			data += headersize;
-			len -= headersize;
-		}
-
-		// Receive data
-		if (len > 0) {
-			LOG_DEBUG("[s3tp] Receiving command data...");
-
-			if (this->buf_used + this->expected >= this->max_buf_size) {
-				LOG_WARN("[s3tp] Receive buffer too full, closing...");
+			std::memcpy(&this->expected, this->buf.data(), headersize);
+			if (this->expected == 0) {
+				LOG_WARN("[s3tp] Invalid length received, closing...");
 				this->close();
 				return;
 			}
+		}
 
-			// Copy data into buffer
-			size_t ncpy = std::min(this->expected, (this->max_buf_size - this->buf_used - 1));
-			std::memcpy(&this->buf[this->buf_used], data, ncpy);
-			this->buf[this->buf_used + ncpy] = '\0';
-			this->buf_used += ncpy;
+		// Receive data
+		if (this->buf.size() >= this->expected + headersize) {
+			if (this->process) {
+				if (compare_to_buf("[eof]"))
+				{
+					LOG_INFO("[s3tp] Received EOF");
+					this->process->close_input();
+				}
+				else
+				{
+					LOG_INFO("[s3tp] Receiving input data...");
+					this->process->input(this->buf.data()+headersize, this->expected);
+				}
+			} else {
+				LOG_INFO("[s3tp] Receiving command data...");
+				std::string command(this->buf.begin()+headersize, this->buf.begin()+headersize+this->expected);
+				process = std::make_unique<Process>(this->loop, command, true, [this] (Process* process, long exit_code) {
 
-			if (this->buf_used >= this->expected) {
+					LOG_INFO("[s3tp] process caboomed...");
+					// Return exit code
+					std::stringstream ss;
+					ss << "[exit] " << exit_code << std::endl;
+					this->send(ss.str().c_str(), ss.str().size());
 
-				std::string command(this->buf.get());
-				auto cmd = std::make_unique<ShellCommandReq>(command, true);
-				if (cmd.get() != nullptr) {
-					// handle each command in the event handler
-					cmd->call_on_complete([this] (const std::string &result) {
-						this->send(result.c_str(), result.length());
-					});
+					this->process = nullptr;
 
-					// actually handle the event in the satellite state logic
-					satellite->on_event(std::move(cmd));
-
-					// immediately send back that the command was received.
+					// perform soft-close, so that s3tp will still send out remaining buffered data
+					(void) this->channel->disconnect();
+				});
+				if (process.get() != nullptr) {
+					// Immediately send back that the command was received.
 					this->send("ack", 3);
 				} else {
 					LOG_WARN("[s3tp] Error while creating request, closing...");
 					this->close();
 					return;
 				}
-
-				this->buf_used = 0;
-				this->buf[0] = '\0';
-				this->expected = 0;
 			}
+
+			this->buf.erase(this->buf.begin(), this->buf.begin() + headersize + this->expected);
+			this->expected = 0;
 		}
 	}
 
-	void S3TPServer::send(const char* msg, size_t len) {
+	void S3TPServer::send(const char* msg, uint32_t len) {
 		if (len == 0)
 			return;
-		LOG_DEBUG("[s3tp] Sending " + std::to_string(len) + " bytes");
+		LOG_INFO("[s3tp] Sending " + std::to_string(len) + " bytes of data");
 		if (!this->channel) {
 			LOG_WARN("[s3tp] Tried to send without open connection!");
 			return;
 		}
 
-		// Send header
-		this->channel->send((void*)&len, sizeof(len));
+		// Send old stuff first
+		if (this->outbuf.size() > 0) {
+			if (!this->send_buf()) {
+				// Append new data to buffer
+				this->outbuf.insert(this->outbuf.end(), msg, msg + len);
+				len += *((uint32_t*) this->outbuf.data());
+				std::memcpy(this->outbuf.data(), &len, sizeof(len));
+				return;
+			}
+			this->outbuf.clear();
+		}
 
-		// Send data
-		this->channel->send((void*)msg, len);
+		// Put length of data into first 4 bytes
+		this->outbuf.resize(sizeof(len));
+		std::memcpy(this->outbuf.data(), &len, sizeof(len));
+
+		// Append actual data
+		this->outbuf.insert(this->outbuf.end(), msg, msg + len);
+
+		// Try to send data
+		this->send_buf();
 
 		update_events();
+	}
+
+	bool S3TPServer::send_buf() {
+		int r = this->channel->send(this->outbuf.data(), this->outbuf.size());
+		if (r == ERROR_BUFFER_FULL) {
+			LOG_WARN("[s3tp] Buffer is full!");
+			if (this->process)
+				this->process->stop_output();
+			return false;
+		}
+		if (r < 0) {
+			LOG_WARN("[s3tp] Failed to send length!");
+			this->close();
+			return false;
+		}
+		this->outbuf.clear();
+		return true;
 	}
 
 	void S3TPServer::close() {
@@ -216,11 +289,15 @@ namespace horst {
 	}
 
 	void S3TPServer::onBufferFull(S3tpChannel&) {
-		LOG_DEBUG("[s3tp] Buffer is full");
+		LOG_INFO("[s3tp] Buffer is full");
+		if (this->process)
+			this->process->stop_output();
 	}
 
 	void S3TPServer::onBufferEmpty(S3tpChannel&) {
-		LOG_DEBUG("[s3tp] Buffer is empty");
+		LOG_INFO("[s3tp] Buffer is empty");
+		if (this->process)
+			this->process->start_output(this);
 	}
 
 	void S3TPServer::onError(int error) {
