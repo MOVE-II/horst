@@ -1,9 +1,20 @@
 #pragma once
 
+#include <cstdint>
+
 /**
  * This defines protocol elements for the S3TP connection between
  * HORST and its clients (like remoteexec)
  */
 
-#define HS3TP_ACK 0x1
-#define HS3TP_EOF 0x2
+/**
+ * Available message flags
+ */
+enum class MessageFlag : std::uint8_t {
+    NONE	= 0,
+    STDIN	= 1,
+    STDOUT	= 2,
+    STDERR	= 4,
+    STARTED	= 8,
+    ENDOFFILE	= 16,
+};

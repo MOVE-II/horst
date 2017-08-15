@@ -33,13 +33,13 @@ class RemoteexecCallback : public S3tpCallback {
     /**
      * Received flags
      */
-    uint8_t flags;
+    MessageFlag flag;
 
     /**
      * Handle incoming data
      */
     void onDataReceived(S3tpChannel &channel, char *data, size_t len) override {
-	const size_t headersize = sizeof(this->expected) + sizeof(this->flags);
+	const size_t headersize = sizeof(this->expected) + sizeof(this->flag);
 
 	// Copy data into buffer
 	this->buf.insert(this->buf.end(), data, data + len);
@@ -54,8 +54,8 @@ class RemoteexecCallback : public S3tpCallback {
 	if (this->expected == 0) {
 		LOG_DEBUG("[s3tp] Receiving new command...");
 		std::memcpy(&this->expected, this->buf.data(), sizeof(this->expected));
-		std::memcpy(&this->flags, this->buf.data() + sizeof(this->expected), sizeof(this->flags));
-		if (this->expected == 0 && flags == 0) {
+		std::memcpy(&this->flag, this->buf.data() + sizeof(this->expected), sizeof(this->flag));
+		if (this->expected == 0 && flag == MessageFlag::NONE) {
 		    throw std::runtime_error("Invalid length received!");
 		    return;
 		}
@@ -68,9 +68,9 @@ class RemoteexecCallback : public S3tpCallback {
 
 	std::string indata(this->buf.begin()+headersize, this->buf.begin()+headersize+this->expected);
 
-	if (this->flags & HS3TP_ACK) {
+	if ((uint8_t) this->flag & (uint8_t) MessageFlag::STARTED) {
 	    LOG_INFO("HORST has received the command.");
-	} else if (this->flags & HS3TP_EOF) {
+	} else if ((uint8_t) this->flag &  (uint8_t) MessageFlag::ENDOFFILE) {
 	    LOG_INFO("Command completed with exit status: " + std::string(indata));
 	    running = false;
 	} else {
@@ -94,18 +94,15 @@ class RemoteexecCallback : public S3tpCallback {
     void onError(int error) override {}
 };
 
-bool writeData(S3tpChannel& channel, std::string line, bool eof) {
+bool writeData(S3tpChannel& channel, std::string line, enum MessageFlag flag) {
 	int r;
-    uint8_t flags = 0;
     uint32_t len = line.length();
     std::vector<char> sendbuf;
 
     // Prepare send buffer
-    if (eof)
-	flags |= HS3TP_EOF;
-    sendbuf.resize(sizeof(len) + sizeof(flags));
+    sendbuf.resize(sizeof(len) + sizeof(flag));
     std::memcpy(sendbuf.data(), &len, sizeof(len));
-    std::memcpy(sendbuf.data() + sizeof(len), &flags, sizeof(flags));
+    std::memcpy(sendbuf.data() + sizeof(len), &flag, sizeof(flag));
     sendbuf.insert(sendbuf.end(), &line[0], &line[0] + len);
 
     // Send message in buffer
@@ -159,7 +156,7 @@ int main(int argc, char* argv[]) {
     asyncCond.wait(lock);
 
     // Write command
-    if (!writeData(channel, command + "\n", false)) {
+    if (!writeData(channel, command + "\n", MessageFlag::NONE)) {
 	LOG_ERROR("An error occurred while sending data over the channel. Quitting.");
 	return 1;
     }
@@ -167,7 +164,6 @@ int main(int argc, char* argv[]) {
 
     // Wait for input on stdin and send to HORST
     bool has_in = true;
-    bool eof = false;
     while (running) {
 		struct timeval tv;
 		fd_set fds;
@@ -183,7 +179,6 @@ int main(int argc, char* argv[]) {
 		if (FD_ISSET(STDIN_FILENO, &fds)) {
 			command.resize(1<<16);
 			int n = read(0, (char*)command.data(), command.size());
-			eof = false;
 			if (n < 0) {
 				LOG_ERROR("An error occurred while reading data from stdin. Quitting.");
 				return 1;
@@ -193,10 +188,11 @@ int main(int argc, char* argv[]) {
 				LOG_INFO("EOF");
 				command = "";
 				has_in = false;
-				eof = true;
+				if (!writeData(channel, "", MessageFlag::ENDOFFILE))
+				    return 1;
 			}
 			if (command.size())
-			    if (!writeData(channel, command, eof))
+			    if (!writeData(channel, command, MessageFlag::STDIN))
 			    	return 1;
 		}
     }

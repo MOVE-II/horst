@@ -1,7 +1,8 @@
-#include "process.h"
 #include "horst.h"
+#include "process.h"
 #include "satellite.h"
 #include "server/s3tp.h"
+#include "server/s3tp_proto.h"
 
 #include <iostream>
 #include <cstring>
@@ -15,8 +16,8 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	:
 	cmd{cmd},
 	on_exit{on_exit},
-	signal{0},
-	exit_code{-1} {
+	exit_code{-1},
+	signal{0} {
 	int r;
 
 	LOG_INFO("[process] created for '"+ std::string(cmd) +"'" + (s3tp ? " from s3tp" : ""));
@@ -108,7 +109,7 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 
 void Process::read_callback(uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
 	if (nread > 0) {
-		satellite->get_s3tp()->send(buf->base, nread, false, false);
+		satellite->get_s3tp()->send(buf->base, nread, MessageFlag::STDOUT);
 		LOG_DEBUG("[process] output: " + std::string(buf->base, buf->base+nread));
 	} else {
 		if (nread == UV_EOF) {

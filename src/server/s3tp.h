@@ -4,6 +4,7 @@
 #include <uv.h>
 
 #include "../process.h"
+#include "s3tp_proto.h"
 
 
 namespace horst {
@@ -25,7 +26,7 @@ public:
 	/**
 	 * Send some data downlink
 	 */
-	void send(const char*, uint32_t, bool, bool);
+	void send(const char*, uint32_t, enum MessageFlag);
 
 private:
 	/**

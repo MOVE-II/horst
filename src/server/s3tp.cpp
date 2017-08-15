@@ -5,7 +5,6 @@
 #include "../horst.h"
 #include "../satellite.h"
 #include "s3tp.h"
-#include "s3tp_proto.h"
 
 namespace horst {
 
@@ -164,8 +163,8 @@ namespace horst {
 	}
 
 	void S3TPServer::onDataReceived(S3tpChannel&, char *data, size_t len) {
-		uint8_t flags = 0;
-		const size_t headersize = sizeof(this->expected) + sizeof(flags);
+		MessageFlag flag;;
+		const size_t headersize = sizeof(this->expected) + sizeof(flag);
 		LOG_INFO("[s3tp] Received " + std::to_string(len) + " bytes");
 
 		// Copy data into buffer
@@ -181,7 +180,7 @@ namespace horst {
 		if (this->expected == 0) {
 			LOG_DEBUG("[s3tp] Receiving new command...");
 			std::memcpy(&this->expected, this->buf.data(), sizeof(this->expected));
-			std::memcpy(&flags, this->buf.data() + sizeof(this->expected), sizeof(flags));
+			std::memcpy(&flag, this->buf.data() + sizeof(this->expected), sizeof(flag));
 			if (this->expected == 0) {
 				LOG_WARN("[s3tp] Invalid length received, closing...");
 				this->close();
@@ -192,7 +191,7 @@ namespace horst {
 		// Receive data
 		if (this->buf.size() >= this->expected + headersize) {
 			if (this->process) {
-				if (flags & HS3TP_EOF) {
+				if (flag == MessageFlag::ENDOFFILE) {
 					LOG_INFO("[s3tp] Received EOF");
 					this->process->close_input();
 				} else {
@@ -208,7 +207,7 @@ namespace horst {
 					// Return exit code
 					std::stringstream ss;
 					ss << "[exit] " << exit_code << std::endl;
-					this->send(ss.str().c_str(), ss.str().size(), false, true);
+					this->send(ss.str().c_str(), ss.str().size(), MessageFlag::ENDOFFILE);
 
 					this->process = nullptr;
 
@@ -217,7 +216,7 @@ namespace horst {
 				});
 				if (process.get() != nullptr) {
 					// Immediately send back that the command was received.
-					this->send("", 0, true, false);
+					this->send("", 0, MessageFlag::STARTED);
 					this->process->start_output();
 				} else {
 					LOG_WARN("[s3tp] Error while creating request, closing...");
@@ -231,9 +230,8 @@ namespace horst {
 		}
 	}
 
-	void S3TPServer::send(const char* msg, uint32_t len, bool ack, bool eof) {
-		uint8_t flags = 0;
-		if (len == 0 && !ack && !eof)
+	void S3TPServer::send(const char* msg, uint32_t len, enum MessageFlag flag) {
+		if (len == 0 && flag == MessageFlag::NONE)
 			return;
 		LOG_INFO("[s3tp] Sending " + std::to_string(len) + " bytes of data");
 		if (!this->channel) {
@@ -241,21 +239,13 @@ namespace horst {
 			return;
 		}
 
-		// Prepare flags byte
-		if (ack)
-			flags |= HS3TP_ACK;
-		if (eof)
-			flags |= HS3TP_EOF;
-
-		LOG_INFO("flags=" + std::to_string(flags));
-
 		// Send old stuff first
 		if (this->outbuf.size() > 0) {
 			if (!this->send_buf()) {
 				// Append new data to buffer
 				this->outbuf.insert(this->outbuf.end(), msg, msg + len);
 				len += *((uint32_t*) this->outbuf.data());
-				flags |= *((uint8_t*) this->outbuf.data() + sizeof(len));
+				uint8_t flags = (uint8_t) flag | *((uint8_t*) this->outbuf.data() + sizeof(len));
 				std::memcpy(this->outbuf.data(), &len, sizeof(len));
 				std::memcpy(this->outbuf.data() + sizeof(len), &flags, sizeof(flags));
 				return;
@@ -264,9 +254,9 @@ namespace horst {
 		}
 
 		// Put length of data into first 4 bytes, flags into byte 5
-		this->outbuf.resize(sizeof(len) + sizeof(flags));
+		this->outbuf.resize(sizeof(len) + sizeof(flag));
 		std::memcpy(this->outbuf.data(), &len, sizeof(len));
-		std::memcpy(this->outbuf.data() + sizeof(len), &flags, sizeof(flags));
+		std::memcpy(this->outbuf.data() + sizeof(len), &flag, sizeof(flag));
 
 		// Append actual data
 		this->outbuf.insert(this->outbuf.end(), msg, msg + len);
