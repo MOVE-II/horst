@@ -108,7 +108,7 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 
 void Process::read_callback(uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
 	if (nread > 0) {
-		satellite->get_s3tp()->send(buf->base, nread);
+		satellite->get_s3tp()->send(buf->base, nread, false, false);
 		LOG_DEBUG("[process] output: " + std::string(buf->base, buf->base+nread));
 	} else {
 		if (nread == UV_EOF) {
@@ -136,7 +136,7 @@ void Process::kill() {
 	uv_process_kill(&this->handle, SIGTERM);
 }
 
-void Process::start_output(S3TPServer* s3tp) {
+void Process::start_output() {
 	uv_read_start((uv_stream_t*)&this->pipe_out, alloc_buffer, read_callback);
 	uv_read_start((uv_stream_t*)&this->pipe_err, alloc_buffer, read_callback);
 }
@@ -167,7 +167,7 @@ void Process::input(char* data, size_t len) {
 	memcpy(databuf, data, len);
 	uv_buf_t buf = uv_buf_init(databuf, len);
 	req->data = buf.base;
-	uv_write(req, (uv_stream_t*) &this->pipe_in, &buf, 1, [](uv_write_t* req, int status) {
+	uv_write(req, (uv_stream_t*) &this->pipe_in, &buf, 1, [](uv_write_t* req, int) {
 		free(req->data);
 		free(req);
 	});

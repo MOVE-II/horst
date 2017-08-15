@@ -25,7 +25,7 @@ public:
 	/**
 	 * Send some data downlink
 	 */
-	void send(const char*, uint32_t);
+	void send(const char*, uint32_t, bool, bool);
 
 private:
 	/**
