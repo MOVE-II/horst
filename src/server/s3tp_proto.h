@@ -8,9 +8,9 @@
  */
 
 /**
- * Available message flags
+ * Available message types
  */
-enum class MessageFlag : std::uint8_t {
+enum class MessageType : std::uint8_t {
     NONE	= 0,
     STDIN	= 1,
     STDOUT	= 2,

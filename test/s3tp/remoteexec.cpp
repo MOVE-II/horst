@@ -31,15 +31,15 @@ class RemoteexecCallback : public S3tpCallback {
     uint32_t expected;
 
     /**
-     * Received flags
+     * Received types
      */
-    MessageFlag flag;
+    MessageType type;
 
     /**
      * Handle incoming data
      */
     void onDataReceived(S3tpChannel &channel, char *data, size_t len) override {
-	const size_t headersize = sizeof(this->expected) + sizeof(this->flag);
+	const size_t headersize = sizeof(this->expected) + sizeof(this->type);
 
 	// Copy data into buffer
 	this->buf.insert(this->buf.end(), data, data + len);
@@ -54,8 +54,8 @@ class RemoteexecCallback : public S3tpCallback {
 	if (this->expected == 0) {
 		LOG_DEBUG("[s3tp] Receiving new command...");
 		std::memcpy(&this->expected, this->buf.data(), sizeof(this->expected));
-		std::memcpy(&this->flag, this->buf.data() + sizeof(this->expected), sizeof(this->flag));
-		if (this->expected == 0 && flag == MessageFlag::NONE) {
+		std::memcpy(&this->type, this->buf.data() + sizeof(this->expected), sizeof(this->type));
+		if (this->expected == 0 && type == MessageType::NONE) {
 		    throw std::runtime_error("Invalid length received!");
 		    return;
 		}
@@ -68,9 +68,9 @@ class RemoteexecCallback : public S3tpCallback {
 
 	std::string indata(this->buf.begin()+headersize, this->buf.begin()+headersize+this->expected);
 
-	if ((uint8_t) this->flag & (uint8_t) MessageFlag::STARTED) {
+	if ((uint8_t) this->type & (uint8_t) MessageType::STARTED) {
 	    LOG_INFO("HORST has received the command.");
-	} else if ((uint8_t) this->flag &  (uint8_t) MessageFlag::ENDOFFILE) {
+	} else if ((uint8_t) this->type &  (uint8_t) MessageType::ENDOFFILE) {
 	    LOG_INFO("Command completed with exit status: " + std::string(indata));
 	    running = false;
 	} else {
@@ -94,15 +94,15 @@ class RemoteexecCallback : public S3tpCallback {
     void onError(int error) override {}
 };
 
-bool writeData(S3tpChannel& channel, std::string line, enum MessageFlag flag) {
+bool writeData(S3tpChannel& channel, std::string line, MessageType type) {
 	int r;
     uint32_t len = line.length();
     std::vector<char> sendbuf;
 
     // Prepare send buffer
-    sendbuf.resize(sizeof(len) + sizeof(flag));
+    sendbuf.resize(sizeof(len) + sizeof(type));
     std::memcpy(sendbuf.data(), &len, sizeof(len));
-    std::memcpy(sendbuf.data() + sizeof(len), &flag, sizeof(flag));
+    std::memcpy(sendbuf.data() + sizeof(len), &type, sizeof(type));
     sendbuf.insert(sendbuf.end(), &line[0], &line[0] + len);
 
     // Send message in buffer
@@ -156,7 +156,7 @@ int main(int argc, char* argv[]) {
     asyncCond.wait(lock);
 
     // Write command
-    if (!writeData(channel, command + "\n", MessageFlag::NONE)) {
+    if (!writeData(channel, command + "\n", MessageType::NONE)) {
 	LOG_ERROR("An error occurred while sending data over the channel. Quitting.");
 	return 1;
     }
@@ -188,12 +188,12 @@ int main(int argc, char* argv[]) {
 				LOG_INFO("EOF");
 				command = "";
 				has_in = false;
-				if (!writeData(channel, "", MessageFlag::ENDOFFILE))
+				if (!writeData(channel, "", MessageType::ENDOFFILE))
 				    return 1;
 			}
 			if (command.size())
-			    if (!writeData(channel, command, MessageFlag::STDIN))
-			    	return 1;
+			    if (!writeData(channel, command, MessageType::STDIN))
+				return 1;
 		}
     }
     LOG_INFO("Quitting.");

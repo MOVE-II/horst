@@ -26,7 +26,7 @@ public:
 	/**
 	 * Send some data downlink
 	 */
-	void send(const char*, uint32_t, enum MessageFlag);
+	void send(const char*, uint32_t, MessageType);
 
 private:
 	/**
