@@ -5,7 +5,7 @@
   SHORTWAIT=1
 
   script_full_path=$(dirname "$0")
-  if /bin/bash "$script_full_path/check_leop.sh"; then
+  if "$script_full_path/check_leop.sh"; then
     # LEOP is done
 
     # Switch on PL
