@@ -78,6 +78,8 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	if (s3tp) {
 		uv_pipe_init(loop, &this->pipe_out, 1);
 		uv_pipe_init(loop, &this->pipe_err, 1);
+		this->pipe_out.data = this;
+		this->pipe_err.data = this;
 
 		has_in = true;
 		uv_pipe_init(loop, &this->pipe_in, 1);
@@ -107,9 +109,11 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	}
 }
 
-void Process::read_callback(uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
+void Process::read_callback(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) {
 	if (nread > 0) {
-		satellite->get_s3tp()->send(buf->base, nread, MessageType::STDOUT);
+		MessageType type = ((uv_pipe_t*) stream == &(((Process*) stream->data)->pipe_out))
+			? MessageType::STDOUT : MessageType::STDERR;
+		satellite->get_s3tp()->send(buf->base, nread, type);
 		LOG_DEBUG("[process] output: " + std::string(buf->base, buf->base+nread));
 	} else {
 		if (nread == UV_EOF) {

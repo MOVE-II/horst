@@ -238,7 +238,7 @@ namespace horst {
 	void S3TPServer::send(const char* msg, uint32_t len, MessageType type) {
 		if (len == 0 && type == MessageType::NONE)
 			return;
-		LOG_INFO("[s3tp] Sending " + std::to_string(len) + " bytes of data");
+		LOG_INFO("[s3tp] Queueing " + std::to_string(len) + " bytes of data for sending");
 		if (!this->channel) {
 			LOG_WARN("[s3tp] Tried to send without open connection!");
 			return;
@@ -263,9 +263,12 @@ namespace horst {
 		if (this->outbuf.size() == 0)
 		    return true;
 
+		LOG_INFO("[s3tp] Sending " + std::to_string(this->outbuf.size()) + " bytes of data");
 		int r = this->channel->send(this->outbuf.data(), this->outbuf.size());
 		if (r == ERROR_BUFFER_FULL) {
 			LOG_WARN("[s3tp] Buffer is full!");
+			if (this->process)
+				this->process->stop_output();
 			return false;
 		}
 		if (r < 0) {
@@ -293,6 +296,8 @@ namespace horst {
 
 	void S3TPServer::onBufferFull(S3tpChannel&) {
 		LOG_INFO("[s3tp] Buffer is full");
+		if (this->process)
+			this->process->stop_output();
 	}
 
 	void S3TPServer::onBufferEmpty(S3tpChannel&) {

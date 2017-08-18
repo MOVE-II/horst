@@ -68,9 +68,9 @@ class RemoteexecCallback : public S3tpCallback {
 
 	std::string indata(this->buf.begin()+headersize, this->buf.begin()+headersize+this->expected);
 
-	if ((uint8_t) this->type & (uint8_t) MessageType::STARTED) {
+	if (this->type == MessageType::STARTED) {
 	    LOG_INFO("HORST has received the command.");
-	} else if ((uint8_t) this->type &  (uint8_t) MessageType::ENDOFFILE) {
+	} else if (this->type == MessageType::ENDOFFILE) {
 	    LOG_INFO("Command completed with exit status: " + std::string(indata));
 	    running = false;
 	} else {
