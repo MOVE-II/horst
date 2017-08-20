@@ -163,7 +163,8 @@ namespace horst {
 	}
 
 	void S3TPServer::onDataReceived(S3tpChannel&, char *data, size_t len) {
-		const size_t headersize = sizeof(this->expected);
+		MessageType type;;
+		const size_t headersize = sizeof(this->expected) + sizeof(type);
 		LOG_INFO("[s3tp] Received " + std::to_string(len) + " bytes");
 
 		// Copy data into buffer
@@ -178,7 +179,8 @@ namespace horst {
 		// Receive header
 		if (this->expected == 0) {
 			LOG_DEBUG("[s3tp] Receiving new command...");
-			std::memcpy(&this->expected, this->buf.data(), headersize);
+			std::memcpy(&this->expected, this->buf.data(), sizeof(this->expected));
+			std::memcpy(&type, this->buf.data() + sizeof(this->expected), sizeof(type));
 			if (this->expected == 0) {
 				LOG_WARN("[s3tp] Invalid length received, closing...");
 				this->close();
@@ -189,13 +191,10 @@ namespace horst {
 		// Receive data
 		if (this->buf.size() >= this->expected + headersize) {
 			if (this->process) {
-				if (compare_to_buf("[eof]"))
-				{
+				if (type == MessageType::ENDOFFILE) {
 					LOG_INFO("[s3tp] Received EOF");
 					this->process->close_input();
-				}
-				else
-				{
+				} else {
 					LOG_INFO("[s3tp] Receiving input data...");
 					this->process->input(this->buf.data()+headersize, this->expected);
 				}
@@ -208,16 +207,22 @@ namespace horst {
 					// Return exit code
 					std::stringstream ss;
 					ss << "[exit] " << exit_code << std::endl;
-					this->send(ss.str().c_str(), ss.str().size());
+					this->send(ss.str().c_str(), ss.str().size(), MessageType::ENDOFFILE);
 
 					this->process = nullptr;
 
-					// perform soft-close, so that s3tp will still send out remaining buffered data
-					(void) this->channel->disconnect();
+					if (this->outbuf.size() > 0) {
+						// Send all remaining data, connection will be closed afterwards
+						this->send_buf();
+					} else {
+						// perform soft-close, so that s3tp will still send out remaining buffered data
+						(void) this->channel->disconnect();
+					}
 				});
 				if (process.get() != nullptr) {
 					// Immediately send back that the command was received.
-					this->send("ack", 3);
+					this->send("", 0, MessageType::STARTED);
+					this->process->start_output();
 				} else {
 					LOG_WARN("[s3tp] Error while creating request, closing...");
 					this->close();
@@ -230,41 +235,35 @@ namespace horst {
 		}
 	}
 
-	void S3TPServer::send(const char* msg, uint32_t len) {
-		if (len == 0)
+	void S3TPServer::send(const char* msg, uint32_t len, MessageType type) {
+		if (len == 0 && type == MessageType::NONE)
 			return;
-		LOG_INFO("[s3tp] Sending " + std::to_string(len) + " bytes of data");
+		LOG_INFO("[s3tp] Queueing " + std::to_string(len) + " bytes of data for sending");
 		if (!this->channel) {
 			LOG_WARN("[s3tp] Tried to send without open connection!");
 			return;
 		}
 
-		// Send old stuff first
-		if (this->outbuf.size() > 0) {
-			if (!this->send_buf()) {
-				// Append new data to buffer
-				this->outbuf.insert(this->outbuf.end(), msg, msg + len);
-				len += *((uint32_t*) this->outbuf.data());
-				std::memcpy(this->outbuf.data(), &len, sizeof(len));
-				return;
-			}
-			this->outbuf.clear();
-		}
-
-		// Put length of data into first 4 bytes
-		this->outbuf.resize(sizeof(len));
-		std::memcpy(this->outbuf.data(), &len, sizeof(len));
+		// Put length of data into first 4 bytes, message type into byte 5
+		size_t oldlength = this->outbuf.size();
+		this->outbuf.resize(oldlength + sizeof(len) + sizeof(type));
+		std::memcpy(this->outbuf.data() + oldlength, &len, sizeof(len));
+		std::memcpy(this->outbuf.data() + oldlength + sizeof(len), &type, sizeof(type));
 
 		// Append actual data
 		this->outbuf.insert(this->outbuf.end(), msg, msg + len);
 
-		// Try to send data
+		// Try to send all data
 		this->send_buf();
 
 		update_events();
 	}
 
 	bool S3TPServer::send_buf() {
+		if (this->outbuf.size() == 0)
+		    return true;
+
+		LOG_INFO("[s3tp] Sending " + std::to_string(this->outbuf.size()) + " bytes of data");
 		int r = this->channel->send(this->outbuf.data(), this->outbuf.size());
 		if (r == ERROR_BUFFER_FULL) {
 			LOG_WARN("[s3tp] Buffer is full!");
@@ -273,11 +272,18 @@ namespace horst {
 			return false;
 		}
 		if (r < 0) {
-			LOG_WARN("[s3tp] Failed to send length!");
+			LOG_WARN("[s3tp] Failed to send data!");
 			this->close();
 			return false;
 		}
 		this->outbuf.clear();
+
+		// Close connection, if process exited
+		if (this->process == nullptr) {
+			// perform soft-close, so that s3tp will still send out remaining buffered data
+			(void) this->channel->disconnect();
+		}
+
 		return true;
 	}
 
@@ -297,7 +303,8 @@ namespace horst {
 	void S3TPServer::onBufferEmpty(S3tpChannel&) {
 		LOG_INFO("[s3tp] Buffer is empty");
 		if (this->process)
-			this->process->start_output(this);
+			this->process->start_output();
+		this->send_buf();
 	}
 
 	void S3TPServer::onError(int error) {

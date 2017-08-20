@@ -40,7 +40,7 @@ public:
 	/**
 	 * Start pushing output to S3TP
 	 */
-	void start_output(S3TPServer*);
+	void start_output();
 
 	/**
 	 * Do no longer push output to S3TP (will buffer instead)

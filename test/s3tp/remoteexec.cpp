@@ -4,6 +4,8 @@
 #include <s3tp/connector/S3tpCallback.h>
 #include <s3tp/connector/S3tpChannelAsync.h>
 
+#include "../../src/server/s3tp_proto.h"
+
 
 const std::string SUB_COMPONENT = "S3TP";
 const bool TIMESTAMP_ENABLED = false;
@@ -29,10 +31,15 @@ class RemoteexecCallback : public S3tpCallback {
     uint32_t expected;
 
     /**
+     * Received types
+     */
+    MessageType type;
+
+    /**
      * Handle incoming data
      */
     void onDataReceived(S3tpChannel &channel, char *data, size_t len) override {
-	const size_t headersize = sizeof(this->expected);
+	const size_t headersize = sizeof(this->expected) + sizeof(this->type);
 
 	// Copy data into buffer
 	this->buf.insert(this->buf.end(), data, data + len);
@@ -46,8 +53,9 @@ class RemoteexecCallback : public S3tpCallback {
 	// Receive header
 	if (this->expected == 0) {
 		LOG_DEBUG("[s3tp] Receiving new command...");
-		std::memcpy(&this->expected, this->buf.data(), headersize);
-		if (this->expected == 0) {
+		std::memcpy(&this->expected, this->buf.data(), sizeof(this->expected));
+		std::memcpy(&this->type, this->buf.data() + sizeof(this->expected), sizeof(this->type));
+		if (this->expected == 0 && type == MessageType::NONE) {
 		    throw std::runtime_error("Invalid length received!");
 		    return;
 		}
@@ -60,9 +68,9 @@ class RemoteexecCallback : public S3tpCallback {
 
 	std::string indata(this->buf.begin()+headersize, this->buf.begin()+headersize+this->expected);
 
-	if (indata.compare("ack") == 0) {
+	if (this->type == MessageType::STARTED) {
 	    LOG_INFO("HORST has received the command.");
-	} else if (indata.compare(0, 7, "[exit] ") == 0) {
+	} else if (this->type == MessageType::ENDOFFILE) {
 	    LOG_INFO("Command completed with exit status: " + std::string(indata));
 	    running = false;
 	} else {
@@ -86,21 +94,21 @@ class RemoteexecCallback : public S3tpCallback {
     void onError(int error) override {}
 };
 
-bool writeData(S3tpChannel& channel, std::string line) {
+bool writeData(S3tpChannel& channel, std::string line, MessageType type) {
 	int r;
     uint32_t len = line.length();
+    std::vector<char> sendbuf;
 
-    // Send length of data
-    r = channel.send(&len, sizeof(len));
-    if (r <= 0) {
-		LOG_ERROR("Error " + std::to_string(r) + " occurred while sending data over the channel. Quitting.");
-        return false;
-    }
+    // Prepare send buffer
+    sendbuf.resize(sizeof(len) + sizeof(type));
+    std::memcpy(sendbuf.data(), &len, sizeof(len));
+    std::memcpy(sendbuf.data() + sizeof(len), &type, sizeof(type));
+    sendbuf.insert(sendbuf.end(), &line[0], &line[0] + len);
 
-    // Send data
-    r = channel.send(&line[0], len);
+    // Send message in buffer
+    r = channel.send(sendbuf.data(), sendbuf.size());
     if (r <= 0) {
-		LOG_ERROR("Error " + std::to_string(r) + " occurred while sending data over the channel. Quitting.");
+	LOG_ERROR("Error " + std::to_string(r) + " occurred while sending data over the channel. Quitting.");
         return false;
     }
 
@@ -148,7 +156,7 @@ int main(int argc, char* argv[]) {
     asyncCond.wait(lock);
 
     // Write command
-    if (!writeData(channel, command + "\n")) {
+    if (!writeData(channel, command + "\n", MessageType::NONE)) {
 	LOG_ERROR("An error occurred while sending data over the channel. Quitting.");
 	return 1;
     }
@@ -171,21 +179,21 @@ int main(int argc, char* argv[]) {
 		if (FD_ISSET(STDIN_FILENO, &fds)) {
 			command.resize(1<<16);
 			int n = read(0, (char*)command.data(), command.size());
-			if (n < 0)
-			{
+			if (n < 0) {
 				LOG_ERROR("An error occurred while reading data from stdin. Quitting.");
 				return 1;
 			}
 			command.resize(n);
-			if (command.empty())
-			{
+			if (command.empty()) {
 				LOG_INFO("EOF");
-				command = "[eof]";
+				command = "";
 				has_in = false;
+				if (!writeData(channel, "", MessageType::ENDOFFILE))
+				    return 1;
 			}
 			if (command.size())
-			    if (!writeData(channel, command))
-			    	return 1;
+			    if (!writeData(channel, command, MessageType::STDIN))
+				return 1;
 		}
     }
     LOG_INFO("Quitting.");

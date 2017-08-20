@@ -1,7 +1,8 @@
-#include "process.h"
 #include "horst.h"
+#include "process.h"
 #include "satellite.h"
 #include "server/s3tp.h"
+#include "server/s3tp_proto.h"
 
 #include <iostream>
 #include <cstring>
@@ -15,8 +16,8 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	:
 	cmd{cmd},
 	on_exit{on_exit},
-	signal{0},
-	exit_code{-1} {
+	exit_code{-1},
+	signal{0} {
 	int r;
 
 	LOG_INFO("[process] created for '"+ std::string(cmd) +"'" + (s3tp ? " from s3tp" : ""));
@@ -77,6 +78,8 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	if (s3tp) {
 		uv_pipe_init(loop, &this->pipe_out, 1);
 		uv_pipe_init(loop, &this->pipe_err, 1);
+		this->pipe_out.data = this;
+		this->pipe_err.data = this;
 
 		has_in = true;
 		uv_pipe_init(loop, &this->pipe_in, 1);
@@ -106,9 +109,11 @@ Process::Process(uv_loop_t *loop, const std::string &cmd, bool s3tp,
 	}
 }
 
-void Process::read_callback(uv_stream_t*, ssize_t nread, const uv_buf_t* buf) {
+void Process::read_callback(uv_stream_t* stream, ssize_t nread, const uv_buf_t* buf) {
 	if (nread > 0) {
-		satellite->get_s3tp()->send(buf->base, nread);
+		MessageType type = ((uv_pipe_t*) stream == &(((Process*) stream->data)->pipe_out))
+			? MessageType::STDOUT : MessageType::STDERR;
+		satellite->get_s3tp()->send(buf->base, nread, type);
 		LOG_DEBUG("[process] output: " + std::string(buf->base, buf->base+nread));
 	} else {
 		if (nread == UV_EOF) {
@@ -136,7 +141,7 @@ void Process::kill() {
 	uv_process_kill(&this->handle, SIGTERM);
 }
 
-void Process::start_output(S3TPServer* s3tp) {
+void Process::start_output() {
 	uv_read_start((uv_stream_t*)&this->pipe_out, alloc_buffer, read_callback);
 	uv_read_start((uv_stream_t*)&this->pipe_err, alloc_buffer, read_callback);
 }
@@ -167,7 +172,7 @@ void Process::input(char* data, size_t len) {
 	memcpy(databuf, data, len);
 	uv_buf_t buf = uv_buf_init(databuf, len);
 	req->data = buf.base;
-	uv_write(req, (uv_stream_t*) &this->pipe_in, &buf, 1, [](uv_write_t* req, int status) {
+	uv_write(req, (uv_stream_t*) &this->pipe_in, &buf, 1, [](uv_write_t* req, int) {
 		free(req->data);
 		free(req);
 	});
