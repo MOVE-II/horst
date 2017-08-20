@@ -9,6 +9,7 @@ StartLimitBurst=10
 Type=dbus
 #User=misc
 BusName=moveii.horst
+ExecStartPre=-/opt/cdh_horst/scripts/startup_service.sh
 ExecStart=/opt/cdh_horst/horst -b 30 -s /opt/cdh_horst/scripts/
 
 WatchdogSec=90

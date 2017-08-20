@@ -22,6 +22,12 @@
 
 	systemctl stop gps_active.service
 
-	systemctl start sleepwake.service
+	script_full_path=$(dirname "$0")
+	if "$script_full_path/check_leop.sh"; then
+		# LEOP is done
+
+		systemctl start sleepwake.service
+	fi
+
 
 ) &> /dev/null
