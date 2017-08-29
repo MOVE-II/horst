@@ -28,7 +28,7 @@ class RemoteexecCallback : public S3tpCallback {
 	/**
 	 * Number of bytes expected for command
 	 */
-	uint32_t expected;
+	uint32_t expected = 0;
 
 	/**
 	 * Received types
@@ -39,31 +39,36 @@ class RemoteexecCallback : public S3tpCallback {
 	 * Handle incoming data
 	 */
 	void onDataReceived(S3tpChannel &channel, char *data, size_t len) override {
-		const size_t headersize = sizeof(this->expected) + sizeof(this->type);
 
 		// Copy data into buffer
 		this->buf.insert(this->buf.end(), data, data + len);
 
+		while (handleBuffer()) {}
+	}
+
+	bool handleBuffer() {
+		const size_t headersize = sizeof(this->expected) + sizeof(this->type);
+
 		// Not enough data yet
 		if (this->buf.size() < headersize) {
 			LOG_DEBUG("[s3tp] Not enough data received, waiting for more...");
-			return;
+			return false;
 		}
 
 		// Receive header
 		if (this->expected == 0) {
-			LOG_DEBUG("[s3tp] Receiving new command...");
+			LOG_INFO("[s3tp] Receiving new command...");
 			std::memcpy(&this->expected, this->buf.data(), sizeof(this->expected));
 			std::memcpy(&this->type, this->buf.data() + sizeof(this->expected), sizeof(this->type));
 			if (this->expected == 0 && type == MessageType::NONE) {
 				throw std::runtime_error("Invalid length received!");
-				return;
+				return false;
 			}
 		}
 
 		// Wait until all data of packet are received
 		if (this->buf.size() < this->expected + headersize) {
-			return;
+			return false;
 		}
 
 		std::string indata(this->buf.begin()+headersize, this->buf.begin()+headersize+this->expected);
@@ -79,6 +84,7 @@ class RemoteexecCallback : public S3tpCallback {
 
 		this->buf.erase(this->buf.begin(), this->buf.begin() + headersize + this->expected);
 		this->expected = 0;
+		return true;
 	}
 
 	void onConnected(S3tpChannel &channel) override {
