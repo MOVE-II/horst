@@ -92,7 +92,18 @@ void DBusConnection::update_events() {
 	});
 }
 
-
+/**
+ * # command "s" -> x
+ * Execute bash command on satellite
+ *
+ * ## Test
+ *
+ * ```
+ * busctl call moveii.horst /moveii/horst moveii.horst exec s <command>
+ * ```
+ * ## Verify
+ * Specified command should be executed
+ */
 static int dbus_exec(sd_bus_message *m, void *userdata, sd_bus_error*) {
 
 	DBusConnection *this_ = (DBusConnection *)userdata;
@@ -107,11 +118,21 @@ static int dbus_exec(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	auto req = std::make_shared<ShellCommandReq>(command);
 	this_->get_sat()->on_event(std::move(req));
 
-	// TODO: maybe do req->call_on_complete([]{real_dbus_return()})
-
 	return sd_bus_reply_method_return(m, "x", 0);
 }
 
+/**
+ * # Requested safemode state "s" -> b
+ * Set safemode state in HORST to the requested one (true or false)
+ *
+ * ## Test
+ *
+ * ```
+ * busctl call moveii.horst /moveii/horst moveii.horst setSafemode s <true or false>
+ * ```
+ * ## Verify
+ * Safemode should be set accordingly afterwards (see corresponding beacon value)
+ */
 static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	DBusConnection *this_ = (DBusConnection *)userdata;
 	char* safemode;
@@ -134,6 +155,18 @@ static int dbus_safemode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	return sd_bus_reply_method_return(m, "b", true);
 }
 
+/**
+ * # Requested maneuvermode state "s" -> b
+ * Set maneuvermode state in HORST to the requested one (true or false)
+ *
+ * ## Test
+ *
+ * ```
+ * busctl call moveii.horst /moveii/horst moveii.horst setManeuvermode s <true or false>
+ * ```
+ * ## Verify
+ * Maneuvermode should be set accordingly afterwards (see corresponding beacon value)
+ */
 static int dbus_maneuvermode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	DBusConnection *this_ = (DBusConnection *)userdata;
 	char* maneuvermode;
@@ -156,6 +189,19 @@ static int dbus_maneuvermode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	return sd_bus_reply_method_return(m, "b", true);
 }
 
+/**
+ * # NULL -> ay
+ * Get beacon data
+ *
+ * ## Test
+ *
+ * ```
+ * busctl call moveii.horst /moveii/horst moveii.horst getBeaconData
+ * ```
+ * ## Verify
+ * The beacon values should be returned as specified in the interface
+ * specification.
+ */
 static int getBeaconData(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	DBusConnection *this_ = (DBusConnection *)userdata;
 	State* state = this_->get_sat()->get_state();
@@ -199,6 +245,18 @@ static int getBeaconData(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	return 1;
 }
 
+/**
+ * # Requested manualmode state "s" -> b
+ * Set manualmode state in HORST to the requested one (true or false)
+ *
+ * ## Test
+ *
+ * ```
+ * busctl call moveii.horst /moveii/horst moveii.horst setManualmode s <true or false>
+ * ```
+ * ## Verify
+ * Manualmode should be set accordingly afterwards (see corresponding beacon value)
+ */
 static int dbus_manualmode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	DBusConnection *this_ = (DBusConnection *)userdata;
 	char* manualmode;
@@ -221,12 +279,36 @@ static int dbus_manualmode(sd_bus_message *m, void *userdata, sd_bus_error*) {
 	return sd_bus_reply_method_return(m, "b", true);
 }
 
+/**
+ * # NULL -> y 0
+ * Will always return 0, which indicates a working daemon
+ *
+ * ## Test
+ *
+ * ```
+ * busctl call moveii.horst /moveii/horst moveii.horst checkDaemon
+ * ```
+ * ## Verify
+ * Always returns 0
+ */
 static int
 checkDaemon(sd_bus_message *m, void*, sd_bus_error*) {
     LOG_DEBUG("Daemons checkDaemon is called");
-    return sd_bus_reply_method_return(m, "q", 0);
+    return sd_bus_reply_method_return(m, "y", 0);
 }
 
+/**
+ * # NULL -> s
+ * Get the version of the daemon
+ *
+ * ## Test
+ *
+ * ```
+ * busctl call moveii.horst /moveii/horst moveii.horst getVersion
+ * ```
+ * ## Verify
+ * Returned version should match the one printed on startup of the daemon
+ */
 static int
 getVersion(sd_bus_message *m, void*, sd_bus_error*) {
     sd_bus_message *retm;
@@ -258,10 +340,23 @@ getVersion(sd_bus_message *m, void*, sd_bus_error*) {
     return 1;
 }
 
+/**
+ * # NULL -> y 0
+ * Will always return 0, which indicates a working hardware for the daemon.
+ * (BDC does not depend on any hardware directly)
+ *
+ * ## Test
+ *
+ * ```
+ * busctl call moveii.horst /moveii/horst moveii.horst checkHardware
+ * ```
+ * ## Verify
+ * Always returns 0
+ */
 static int
 checkHardware(sd_bus_message *m, void*, sd_bus_error*) {
     LOG_DEBUG("Daemons checkHardware is called");
-    return sd_bus_reply_method_return(m, "q", 0);
+    return sd_bus_reply_method_return(m, "y", 0);
 }
 
 static const sd_bus_vtable horst_vtable[] = {
@@ -271,8 +366,8 @@ static const sd_bus_vtable horst_vtable[] = {
 	SD_BUS_METHOD("setManeuvermode", "s", "b", dbus_maneuvermode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("setManualmode", "s", "b", dbus_manualmode, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("getBeaconData", "", "ay", getBeaconData, SD_BUS_VTABLE_UNPRIVILEGED),
-	SD_BUS_METHOD("checkDaemon", "", "q", checkDaemon, SD_BUS_VTABLE_UNPRIVILEGED),
-	SD_BUS_METHOD("checkHardware", "", "q", checkHardware, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("checkDaemon", "", "y", checkDaemon, SD_BUS_VTABLE_UNPRIVILEGED),
+	SD_BUS_METHOD("checkHardware", "", "y", checkHardware, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_METHOD("getVersion", "", "s", getVersion, SD_BUS_VTABLE_UNPRIVILEGED),
 	SD_BUS_SIGNAL("adcsStateReached", "s", 0),
 	SD_BUS_SIGNAL("payloadConditionsFulfilled", "", 0),
